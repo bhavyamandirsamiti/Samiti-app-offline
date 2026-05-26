@@ -8,7 +8,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="मंदिर समिति">
     <meta name="application-name" content="भव्य मंदिर निर्माण समिति">
-    <link rel="manifest" href="data:application/manifest+json,{%22name%22:%22%E0%A4%AD%E0%A4%B5%E0%A5%8D%E0%A4%AF%20%E0%A4%AE%E0%A4%A8%E0%A5%8D%E0%A4%A6%E0%A4%BF%E0%A4%B0%20%E0%A4%A8%E0%A4%BF%E0%A4%B0%E0%A5%8D%E0%A4%AE%E0%A4%BE%E0%A4%A3%20%E0%A4%B8%E0%A4%AE%E0%A4%BF%E0%A4%A4%E0%A4%BF%22,%22short_name%22:%22%E0%A4%AE%E0%A4%82%E0%A4%A6%E0%A4%BF%E0%A4%B0%20%E0%A4%B8%E0%A4%AE%E0%A4%BF%E0%A4%A4%E0%A4%BF%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22theme_color%22:%22%23FF9933%22,%22background_color%22:%22%23FFF8F0%22,%22icons%22:[{%22src%22:%22data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20192%20192'%3E%3Crect%20fill='%23FF9933'%20width='192'%20height='192'/%3E%3Ctext%20x='96'%20y='140'%20font-size='100'%20text-anchor='middle'%20fill='white'%3E%F0%9F%9A%A9%3C/text%3E%3C/svg%3E%22,%22sizes%22:%22192x192%22,%22type%22:%22image/svg+xml%22}]}">
+    <!-- PWA Manifest - New -->
+    <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect fill='%23FF9933' width='180' height='180'/%3E%3Ctext x='90' y='130' font-size='90' text-anchor='middle' fill='white'%3E🚩%3C/text%3E%3C/svg%3E">
     <title>🚩 भव्य मंदिर निर्माण समिति – गुलाबपुरा मोहनगढ़</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -66,7 +67,6 @@
         .stat-card:hover { transform: translateY(-5px); }
         .stat-value { font-size: 28px; font-weight: 800; }
         .stat-label { font-size: 12px; color: var(--gray); margin-top: 8px; }
-        /* Dashboard card colors */
         .stat-card[data-type="active"] { border-bottom-color: #FF9933; }
         .stat-card[data-type="active"] .stat-value { color: #FF9933; }
         .stat-card[data-type="donation"] { border-bottom-color: #28a745; }
@@ -75,12 +75,8 @@
         .stat-card[data-type="pending"] .stat-value { color: #dc3545; }
         .stat-card[data-type="committee"] { border-bottom-color: #17a2b8; }
         .stat-card[data-type="committee"] .stat-value { color: #17a2b8; }
-        .stat-card[data-type="advance"] { border-bottom-color: #fd7e14; }
-        .stat-card[data-type="advance"] .stat-value { color: #fd7e14; }
-        .stat-card[data-type="monthly"] { border-bottom-color: #20c997; }
-        .stat-card[data-type="monthly"] .stat-value { color: #20c997; }
-        .stat-card[data-type="today"] { border-bottom-color: #6f42c1; }
-        .stat-card[data-type="today"] .stat-value { color: #6f42c1; }
+        .stat-card[data-type="committeeMonthly"] { border-bottom-color: #20c997; }
+        .stat-card[data-type="committeeMonthly"] .stat-value { color: #20c997; }
         .stat-card[data-type="expense"] { border-bottom-color: #6c757d; }
         .stat-card[data-type="expense"] .stat-value { color: #6c757d; }
         .stat-card[data-type="balance"] { border-bottom-color: #FF9933; }
@@ -89,7 +85,6 @@
         body.dark .data-table { background: #1e1e2f; }
         .data-table th { background: linear-gradient(135deg, var(--saffron), var(--gold)); color: white; padding: 12px; text-align: left; font-size: 13px; white-space: nowrap; }
         .data-table td { padding: 12px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
-        /* Member row with two lines - info above, actions below */
         .member-cell { display: flex; flex-direction: column; gap: 10px; }
         .member-info-row { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; font-size: 13px; }
         .member-actions-row { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -146,14 +141,8 @@
         .media-preview-item { position: relative; width: 80px; height: 80px; border-radius: 8px; overflow: hidden; }
         .media-preview-item img, .media-preview-item video { width: 100%; height: 100%; object-fit: cover; }
         .media-preview-item .remove-media { position: absolute; top: 2px; right: 2px; background: red; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        /* Bulk WhatsApp styles */
-        .bulk-whatsapp-container { background: #f0f0f0; border-radius: 16px; padding: 15px; margin-bottom: 15px; }
-        body.dark .bulk-whatsapp-container { background: #2a2a3a; }
-        .bulk-member-select { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
-        .bulk-members-list { max-height: 300px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; margin: 10px 0; background: #fff; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
-        body.dark .bulk-members-list { background: #2a2a3a; border-color: var(--saffron); }
-        .interval-select { display: flex; align-items: center; gap: 10px; margin: 10px 0; flex-wrap: wrap; }
-        .committee-info-cell { display: flex; flex-direction: column; gap: 8px; }
+        .committee-info-card { background: linear-gradient(135deg, #fff3e0, #ffe0b3); border-radius: 16px; padding: 15px; margin-bottom: 15px; }
+        body.dark .committee-info-card { background: #2a3a2a; }
     </style>
 </head>
 <body>
@@ -199,9 +188,71 @@
 <div id="offlineStatus" class="offline-badge">📡 ऑफलाइन मोड</div>
 
 <script>
-// ==================== COMPLETE APP - ROW TYPE LAYOUT (NO COLUMN TYPE) ====================
+// ==================== CREATE MANIFEST DYNAMICALLY ====================
+(function createManifest() {
+    const manifest = {
+        name: "भव्य मंदिर निर्माण समिति",
+        short_name: "मंदिर समिति",
+        start_url: "/",
+        display: "standalone",
+        theme_color: "#FF9933",
+        background_color: "#FFF8F0",
+        icons: [
+            {
+                src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect fill='%23FF9933' width='192' height='192'/%3E%3Ctext x='96' y='140' font-size='100' text-anchor='middle' fill='white'%3E🚩%3C/text%3E%3C/svg%3E",
+                sizes: "192x192",
+                type: "image/svg+xml"
+            },
+            {
+                src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect fill='%23FF9933' width='512' height='512'/%3E%3Ctext x='256' y='370' font-size='280' text-anchor='middle' fill='white'%3E🚩%3C/text%3E%3C/svg%3E",
+                sizes: "512x512",
+                type: "image/svg+xml"
+            }
+        ]
+    };
+    const manifestBlob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+    const manifestURL = URL.createObjectURL(manifestBlob);
+    const link = document.createElement('link');
+    link.rel = 'manifest';
+    link.href = manifestURL;
+    document.head.appendChild(link);
+})();
+
+// ==================== SERVICE WORKER (NEW) ====================
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+        const swCode = `const CACHE_NAME = 'mandir-v2'; const urlsToCache = ['/']; self.addEventListener('install', event => { event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))); self.skipWaiting(); }); self.addEventListener('fetch', event => { event.respondWith(caches.match(event.request).then(response => response || fetch(event.request))); }); self.addEventListener('activate', event => { event.waitUntil(clients.claim()); });`;
+        const swBlob = new Blob([swCode], {type: 'application/javascript'});
+        const swURL = URL.createObjectURL(swBlob);
+        navigator.serviceWorker.register(swURL).then(reg => console.log('Service Worker registered:', reg)).catch(err => console.log('SW registration failed:', err));
+    });
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    window.deferredPrompt = e;
+    const btn = document.getElementById('installAppBtn');
+    if(btn) btn.style.display = 'inline-flex';
+    console.log('beforeinstallprompt fired - installation available');
+});
+
+window.installApp = function() {
+    if(window.deferredPrompt) {
+        window.deferredPrompt.prompt();
+        window.deferredPrompt.userChoice.then((result) => {
+            if(result.outcome === 'accepted') console.log('User accepted install');
+            else console.log('User dismissed install');
+            window.deferredPrompt = null;
+            document.getElementById('installAppBtn').style.display = 'none';
+        });
+    } else {
+        showToast("📱 इंस्टॉल के लिए Chrome/Microsoft Edge का उपयोग करें और HTTPS पर चलाएँ", true);
+    }
+};
+
+// ==================== APP DATA ====================
 let appData = {
-    settings: { committeeName: "🚩 भव्य मंदिर निर्माण समिति 🚩", committeeSubtitle: "गुलाबपुरा (मोहनगढ़)", upiId: "asryadavtkg@ybl", president: "राजेन्द्र यादव जी", secretary: "अरविन्द सिंह यादव", presidentMobile: "9754452583", presidentSignature: "", secretarySignature: "", logo: "", whatsappGroupLink: "", telegramGroupLink: "", facebookLink: "", instagramLink: "", youtubeLink: "" },
+    settings: { committeeName: "🚩 भव्य मंदिर निर्माण समिति 🚩", committeeSubtitle: "गुलाबपुरा (मोहनगढ़)", upiId: "asryadavtkg@ybl", president: "राजेन्द्र यादव जी", secretary: "अरविन्द सिंह यादव", presidentMobile: "9754452583", presidentSignature: "", secretarySignature: "", logo: "", whatsappGroupLink: "", telegramGroupLink: "", facebookLink: "", instagramLink: "", youtubeLink: "", committeeObjective: "भव्य मंदिर निर्माण एवं धार्मिक कार्यों का संचालन" },
     members: [], donations: [], expenses: [], events: [], ramcharitmanas: [], gallery: [], auditLogs: [], users: [], committees: [], receipts: [], construction: { percentage: 35, photos: [], expenses: [] }, loginHistory: [], announcements: [], meetings: [], transactions: [], 
     deletedMembers: [], deletedDonations: [], deletedExpenses: [], deletedTransactions: [], deletedEvents: [], deletedMeetings: [], deletedAnnouncements: [],
     nextReceiptCounter: 1, nextTransactionReceiptCounter: 1,
@@ -210,7 +261,6 @@ let appData = {
 let currentUser = null, currentMain = "home", currentSub = "dashboard", navigationStack = [];
 let yearlyChart = null, trendChart = null, pieChart = null, dashboardMonthChart = null, dashboardYearChart = null;
 let bulkInterval = null, bulkIndex = 0, bulkMembers = [];
-let deferredPrompt = null;
 let selectedMembersForDelete = [];
 
 // ==================== DEFAULT COMMITTEE MEMBERS (8) ====================
@@ -260,19 +310,20 @@ function getCurrentYearMonth() {
     return { year: now.getFullYear(), month: now.getMonth(), monthName: ['जनवरी','फरवरी','मार्च','अप्रैल','मई','जून','जुलाई','अगस्त','सितम्बर','अक्टूबर','नवम्बर','दिसम्बर'][now.getMonth()] };
 }
 
+// ==================== FORMAT REMINDER MESSAGE WITH YEAR ====================
 function formatReminderMessage(member, pendingAmount, yearWiseDetails, isCommittee = false) {
-    let currentYear = new Date().getFullYear();
     let msg = `🚩 *जय श्री राम* 🚩\n\n`;
     msg += `आदरणीय *${member.name} जी*,\n`;
     msg += `भव्य मंदिर निर्माण समिति आपके निरंतर सहयोग हेतु हृदय से आभारी है। *आप पर और आपके परिवार पर हनुमान जी की कृपा और आशीर्वाद हमेशा बना रहे।* \n\n`;
-    msg += `वर्ष ${currentYear} का आपका मासिक विवरण इस प्रकार है:\n\n`;
+    msg += `आपका मासिक विवरण इस प्रकार है:\n\n`;
     for(let item of yearWiseDetails) {
         let status = item.isPaid ? "✅" : "⭕";
-        msg += `🗓️ ${item.monthName}: ${status} ₹${item.amount} शेष राशि (${item.isPaid ? "जमा" : "देय है"})\n`;
+        msg += `🗓️ ${item.monthName} ${item.year}: ${status} ₹${item.amount} शेष राशि (${item.isPaid ? "जमा" : "देय है"})\n`;
     }
     let totalReceived = yearWiseDetails.filter(i => i.isPaid).reduce((s,i) => s + i.amount, 0);
+    let totalExpected = yearWiseDetails.reduce((s,i) => s + i.amount, 0);
     msg += `--------------------------------\n`;
-    msg += `💰 *कुल प्राप्त सहयोग (${currentYear}): ₹${totalReceived}*\n`;
+    msg += `💰 *कुल प्राप्त सहयोग (कुल): ₹${totalReceived}*\n`;
     msg += `⚠️ *कुल शेष बकाया: ₹${pendingAmount}*\n`;
     msg += `💸 *UPI ID: ${appData.settings.upiId}*\n`;
     msg += `--------------------------------\n`;
@@ -362,9 +413,9 @@ function sendToPresident(subject, data) {
     showToast(`📱 अध्यक्ष को ${subject} भेजा जा रहा है`);
 }
 
-function saveToLocalStorage() { localStorage.setItem('mandirFinalAppV13', JSON.stringify(appData)); }
+function saveToLocalStorage() { localStorage.setItem('mandirFinalAppV14', JSON.stringify(appData)); }
 function loadFromLocalStorage() {
-    let d = localStorage.getItem('mandirFinalAppV13');
+    let d = localStorage.getItem('mandirFinalAppV14');
     if(d) { 
         let p = JSON.parse(d); 
         appData = { ...appData, ...p };
@@ -445,32 +496,6 @@ function initAll53Members() {
     saveToLocalStorage();
 }
 
-// ==================== PWA ====================
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        const swCode = `const CACHE_NAME = 'mandir-v500'; self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(['/']))); self.skipWaiting(); }); self.addEventListener('fetch', e => { e.respondWith(caches.match(e.request).then(r => r || fetch(e.request))); });`;
-        const swBlob = new Blob([swCode], {type: 'application/javascript'});
-        navigator.serviceWorker.register(URL.createObjectURL(swBlob)).then(reg => console.log('SW registered')).catch(err => console.log('SW error:', err));
-    });
-}
-window.addEventListener('beforeinstallprompt', (e) => { 
-    e.preventDefault(); 
-    deferredPrompt = e; 
-    const btn = document.getElementById('installAppBtn'); 
-    if(btn) btn.style.display = 'inline-flex'; 
-});
-window.installApp = function() { 
-    if(deferredPrompt) { 
-        deferredPrompt.prompt(); 
-        deferredPrompt.userChoice.then(() => { 
-            deferredPrompt = null; 
-            document.getElementById('installAppBtn').style.display = 'none'; 
-        }); 
-    } else {
-        showToast("📱 इंस्टॉल के लिए Chrome/Microsoft Edge का उपयोग करें", true);
-    }
-};
-
 // ==================== THEME ====================
 function openThemeModal() {
     let html = `<div class="modal"><div class="modal-content"><h3>🎨 थीम चुनें</h3><div class="flex-between"><button class="btn" style="background:#FF9933;color:white" onclick="setTheme(1)">🔸 केसरिया</button><button class="btn" style="background:#E91E63;color:white" onclick="setTheme(2)">🌸 गुलाबी</button><button class="btn" style="background:#2196F3;color:white" onclick="setTheme(3)">💙 नीला</button><button class="btn" style="background:#4CAF50;color:white" onclick="setTheme(4)">💚 हरा</button><button class="btn" style="background:#9C27B0;color:white" onclick="setTheme(5)">🟣 बैंगनी</button><button class="btn" style="background:#FF5722;color:white" onclick="setTheme(6)">🟠 नारंगी</button><button class="btn" style="background:#00BCD4;color:white" onclick="setTheme(7)">🩵 सियान</button><button class="btn" style="background:#3F51B5;color:white" onclick="setTheme(8)">🔵 इंडिगो</button></div><button class="btn btn-secondary" onclick="closeModal()">रद्द</button></div></div>`;
@@ -489,7 +514,7 @@ function sendReminderMsg(id, isCommittee = false) {
     showToast(`📱 रिमाइंडर भेजा`);
 }
 
-// ==================== MEMBER FUNCTIONS - TWO ROW LAYOUT ====================
+// ==================== MEMBER FUNCTIONS ====================
 function renderMemberList() {
     computeAllPending();
     let visible = appData.members.filter(m=>!m.hidden);
@@ -497,7 +522,7 @@ function renderMemberList() {
     <div class="search-filters"><input type="text" id="searchName" placeholder="🔍 नाम खोजें" onkeyup="filterMembers()" class="form-control" style="width:130px"><input type="text" id="searchMobile" placeholder="📞 मोबाइल" onkeyup="filterMembers()" class="form-control" style="width:130px"><input type="text" id="searchVillage" placeholder="🏠 गाँव" onkeyup="filterMembers()" class="form-control" style="width:130px"><button class="btn-sm btn-secondary" onclick="clearFilters()">साफ़</button></div>
     <div id="bulkDeleteBar" class="bulk-delete-bar" style="display:none;"><span id="selectedCount">0</span> सदस्य चुने <button class="btn-sm btn-danger" onclick="confirmBulkDelete()">हटाएँ</button><button class="btn-sm btn-secondary" onclick="clearMemberSelection()">साफ़</button></div>
     <div class="flex-between"><button class="btn-sm btn-success" onclick="exportExcel()"><i class="fas fa-file-excel"></i> एक्सेल</button></div>
-    <div class="table-wrapper"><table class="data-table"><thead><th style="width:30px"><input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()"></th><th style="width:40px">#</th><th>नाम</th><th>पिता का नाम</th><th>गाँव</th><th>मोबाइल</th><th>मासिक</th><th>बकाया</th><th>स्थिति</th><th>कार्य</th></thead><tbody id="memberTableBody"></tbody></table></div></div>`;
+    <div class="table-wrapper"><table class="data-table"><thead><th style="width:30px"><input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()"></th><th style="width:40px">#</th><th>नाम</th><th>पिता का नाम</th><th>गाँव</th><th>मोबाइल</th><th>मासिक</th><th>बकाया</th><th>स्थिति</th><th>कार्य</th></thead><tbody id="memberTableBody"></tbody></td></div></div>`;
     document.getElementById('contentArea').innerHTML = html;
     filterMembers();
 }
@@ -552,7 +577,7 @@ function openPaymentModal(memberId, isCommittee) { if(!canAddDonation()){ showTo
     let html2 = '';
     for(let y of years) {
         html2 += `<div class="year-group"><div class="year-header" onclick="toggleYear('${y}')"><div><input type="checkbox" class="yearCheckbox" data-year="${y}" onchange="selectYear('${y}', this.checked)"> <strong>📅 ${y}</strong> (${groups[y].length} महीने)</div><i class="fas fa-chevron-down"></i></div><div class="year-months" id="yearMonths_${y}" style="display:block;">`;
-        for(let mon of groups[y]) { html2 += `<div class="month-item"><input type="checkbox" class="monthCb" data-year="${mon.year}" data-month="${mon.monthIndex}" data-name="${mon.monthName}" data-amount="${mon.amount}"> <label>${mon.monthName} - ₹${mon.amount}</label></div>`; }
+        for(let mon of groups[y]) { html2 += `<div class="month-item"><input type="checkbox" class="monthCb" data-year="${mon.year}" data-month="${mon.monthIndex}" data-name="${mon.monthName}" data-amount="${mon.amount}"> <label>${mon.monthName} ${mon.year} - ₹${mon.amount}</label></div>`; }
         html2 += `</div></div>`;
     }
     container.innerHTML = html2;
@@ -575,7 +600,7 @@ function viewReceiptById(receiptNo) { let receipt = appData.receipts.find(r => r
 function sendReceiptOnWhatsApp(receiptNo, name, amount) { let msg = `🚩 *जय श्री राम* 🚩\n\n✅ *रसीद:* ${receiptNo}\n👤 *सदस्य:* ${name}\n💰 *राशि:* ₹${amount}\n💸 *UPI ID:* ${appData.settings.upiId}\n\n🙏 धन्यवाद - ${appData.settings.committeeName}`; window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank'); }
 function printReceiptsList() { let rows = appData.receipts.slice(0,100).map(r=>[r.receiptNo, r.memberName, '₹'+r.amount, new Date(r.date).toLocaleDateString()]); printGenericReport('रसीद सूची', ['रसीद नं.', 'सदस्य नाम', 'राशि', 'तिथि'], rows); }
 
-// ==================== COMMITTEE MEMBERS - TWO ROW LAYOUT ====================
+// ==================== COMMITTEE MEMBERS ====================
 function renderCommitteeMembers() {
     computeAllPending();
     let html = `<div class="card"><div class="card-title">🏛️ समिति सदस्य प्रबंधन<div><button class="print-btn" onclick="printCommitteeMembers()"><i class="fas fa-print"></i> प्रिंट</button><button class="whatsapp-president-btn" onclick="sendCommitteeReportToPresident()"><i class="fab fa-whatsapp"></i> अध्यक्ष को भेजें</button></div></div>
@@ -632,7 +657,7 @@ function renderOtherDonations() {
     document.getElementById('contentArea').innerHTML = html;
     renderOtherDonationsList();
 }
-function renderOtherDonationsList() { let tbody = document.getElementById('otherDonationsBody'); if(tbody) tbody.innerHTML = appData.otherDonations.slice().reverse().map(od=>`<tr><td style="font-size:11px">${od.date}<\/td><td><strong>${od.donationType}<\/strong><\/td><td>${od.donorName}<\/td><td class="text-success">₹${od.amount}<\/td><td>${od.note||'-'}<\/td><td class="action-buttons">${canEdit()?`<button class="btn-sm btn-info" onclick="editOtherDonation(${od.id})">✏️</button><button class="btn-sm btn-danger" onclick="deleteOtherDonation(${od.id})">🗑️</button>`:''}<button class="whatsapp-president-btn" onclick="sendDonationReceipt(${od.id})"><i class="fab fa-whatsapp"></i></button><\/td><\/tr>`).join(''); }
+function renderOtherDonationsList() { let tbody = document.getElementById('otherDonationsBody'); if(tbody) tbody.innerHTML = appData.otherDonations.slice().reverse().map(od=>`<td><td style="font-size:11px">${od.date}<\/td><td><strong>${od.donationType}<\/strong><\/td><td>${od.donorName}<\/td><td class="text-success">₹${od.amount}<\/td><td>${od.note||'-'}<\/td><td class="action-buttons">${canEdit()?`<button class="btn-sm btn-info" onclick="editOtherDonation(${od.id})">✏️</button><button class="btn-sm btn-danger" onclick="deleteOtherDonation(${od.id})">🗑️</button>`:''}<button class="whatsapp-president-btn" onclick="sendDonationReceipt(${od.id})"><i class="fab fa-whatsapp"></i></button><\/td><\/tr>`).join(''); }
 function addOtherDonation() { if(!canEdit()) return; let od = { id: Date.now(), donationType: document.getElementById('odType').value, donorName: document.getElementById('odDonor').value, amount: parseFloat(document.getElementById('odAmount').value), date: document.getElementById('odDate').value, note: document.getElementById('odNote').value, editHistory: [] }; if(!od.donorName || isNaN(od.amount)){ showToast("दाता नाम और राशि दर्ज करें", true); return; } appData.otherDonations.push(od); saveToLocalStorage(); renderOtherDonations(); showToast("✅ दान जोड़ा"); refreshDashboardCharts(); }
 function editOtherDonation(id) { let od = appData.otherDonations.find(x=>x.id===id); let historyHtml = renderEditHistory(od, 'दान'); let html = `<div class="modal"><div class="modal-content"><h3>✏️ दान संपादन</h3><select id="editOdType" class="form-control"><option ${od.donationType==='राशि दान'?'selected':''}>राशि दान</option><option ${od.donationType==='श्रम दान'?'selected':''}>श्रम दान</option><option ${od.donationType==='अन्य दान'?'selected':''}>अन्य दान</option></select><input id="editOdDonor" value="${od.donorName}" class="form-control"><input id="editOdAmount" type="number" value="${od.amount}" class="form-control"><input type="date" id="editOdDate" value="${od.date}" class="form-control"><textarea id="editOdNote" class="form-control">${od.note||''}</textarea><textarea id="editOdReason" placeholder="बदलाव का कारण *" class="form-control" required></textarea><div class="flex-between"><button class="btn btn-primary" onclick="updateOtherDonation(${id})">अपडेट करें</button><button class="btn btn-secondary" onclick="closeModal()">रद्द</button></div>${historyHtml}</div></div>`; document.body.insertAdjacentHTML('beforeend', html); }
 function updateOtherDonation(id) { let od = appData.otherDonations.find(x=>x.id===id); let reason = document.getElementById('editOdReason').value; if(!reason){ showToast("⚠️ कारण लिखें", true); return; } let oldData = { donationType: od.donationType, donorName: od.donorName, amount: od.amount, note: od.note }; od.donationType = document.getElementById('editOdType').value; od.donorName = document.getElementById('editOdDonor').value; od.amount = parseFloat(document.getElementById('editOdAmount').value); od.date = document.getElementById('editOdDate').value; od.note = document.getElementById('editOdNote').value; let newData = { donationType: od.donationType, donorName: od.donorName, amount: od.amount, note: od.note }; addEditHistory(od, 'दान', oldData, newData, reason); saveToLocalStorage(); closeModal(); showToast("✅ अपडेट"); renderOtherDonations(); refreshDashboardCharts(); }
@@ -706,7 +731,7 @@ function cloudBackup() {
 }
 function cloudRestore() { let input = document.createElement('input'); input.type = 'file'; input.accept = 'application/json'; input.onchange = e => { let file = e.target.files[0]; if(!file) return; let reader = new FileReader(); reader.onload = ev => { try { let restored = JSON.parse(ev.target.result); appData = { ...appData, ...restored }; saveToLocalStorage(); computeAllPending(); showToast("✅ रिस्टोर सफल! पेज रिफ्रेश हो रहा है"); setTimeout(() => location.reload(), 2000); } catch(err) { showToast("❌ गलत फाइल", true); } }; reader.readAsText(file); }; input.click(); }
 
-// ==================== DASHBOARD ====================
+// ==================== DASHBOARD WITH COMMITTEE INFO ====================
 function renderDashboard() {
     computeAllPending();
     let activeMembers = appData.members.filter(m=>m.status==='active' && !m.hidden).length;
@@ -719,6 +744,12 @@ function renderDashboard() {
     let todayCol = appData.donations.filter(d=>d.date===today).reduce((s,d)=>s+d.amount,0);
     let monthNow = new Date().getMonth(), yearNow = new Date().getFullYear();
     let monthlyCollection = appData.donations.filter(d=>new Date(d.date).getMonth()===monthNow && new Date(d.date).getFullYear()===yearNow).reduce((s,d)=>s+d.amount,0);
+    // Committee Monthly Donation (current month only)
+    let currentMonthDonation = 0;
+    for(let cm of appData.committeeMembers) {
+        let isPaid = (cm.donations || []).some(d => d.year === yearNow && d.monthIndex === monthNow);
+        if(isPaid) currentMonthDonation += cm.monthlyAmount;
+    }
     let monthsShort = ['जन','फर','मार्च','अप्रैल','मई','जून','जुलाई','अग','सित','अक्टू','नव','दिस'];
     let monthlyIncome = monthsShort.map((_,i)=>appData.donations.filter(d=>new Date(d.date).getMonth()===i && new Date(d.date).getFullYear()===yearNow).reduce((s,d)=>s+d.amount,0));
     let monthlyExpense = monthsShort.map((_,i)=>appData.expenses.filter(e=>new Date(e.date).getMonth()===i && new Date(e.date).getFullYear()===yearNow).reduce((s,e)=>s+e.amount,0));
@@ -727,14 +758,20 @@ function renderDashboard() {
     let yearlyExpense = years.map(y=>appData.expenses.filter(e=>new Date(e.date).getFullYear()===y).reduce((s,e)=>s+e.amount,0));
     let donorMap = new Map(); appData.donations.forEach(d=>{ if(d.memberName) donorMap.set(d.memberName, (donorMap.get(d.memberName)||0)+d.amount); });
     let topDonors = Array.from(donorMap.entries()).sort((a,b)=>b[1]-a[1]).slice(0,5);
-    let html = `<div class="stats-grid">
+    
+    let html = `<div class="committee-info-card">
+        <div class="flex-between"><h3>🏛️ समिति जानकारी</h3><button class="btn-sm btn-primary" onclick="editCommitteeInfo()">✏️ एडिट</button></div>
+        <p><strong>अध्यक्ष:</strong> ${appData.settings.president} (📞 ${appData.settings.presidentMobile})</p>
+        <p><strong>सचिव:</strong> ${appData.settings.secretary}</p>
+        <p><strong>उद्देश्य:</strong> ${appData.settings.committeeObjective || "भव्य मंदिर निर्माण एवं धार्मिक कार्यों का संचालन"}</p>
+    </div>
+    <div class="stats-grid">
         <div class="stat-card" data-type="active"><div class="stat-value">${activeMembers}</div><div class="stat-label">सक्रिय सदस्य</div></div>
         <div class="stat-card" data-type="donation"><div class="stat-value">₹${totalDonations}</div><div class="stat-label">कुल दान</div></div>
         <div class="stat-card" data-type="pending"><div class="stat-value">₹${totalPending}</div><div class="stat-label">सदस्य बकाया</div></div>
         <div class="stat-card" data-type="committee"><div class="stat-value">₹${totalCommitteePending}</div><div class="stat-label">समिति बकाया</div></div>
+        <div class="stat-card" data-type="committeeMonthly"><div class="stat-value">₹${currentMonthDonation}</div><div class="stat-label">समिति मासिक दान (${monthsShort[monthNow]})</div></div>
         <div class="stat-card" data-type="advance"><div class="stat-value">₹${totalAdvance}</div><div class="stat-label">कुल एडवांस</div></div>
-        <div class="stat-card" data-type="monthly"><div class="stat-value">₹${monthlyCollection}</div><div class="stat-label">मासिक संग्रह</div></div>
-        <div class="stat-card" data-type="today"><div class="stat-value">₹${todayCol}</div><div class="stat-label">आज संग्रह</div></div>
         <div class="stat-card" data-type="expense"><div class="stat-value">₹${totalExpenses}</div><div class="stat-label">व्यय</div></div>
         <div class="stat-card" data-type="balance"><div class="stat-value">₹${totalDonations-totalExpenses}</div><div class="stat-label">शेष राशि</div></div>
     </div>
@@ -748,7 +785,28 @@ function renderDashboard() {
     if(ctx2) { if(dashboardYearChart) dashboardYearChart.destroy(); dashboardYearChart = new Chart(ctx2, { type:'line', data:{ labels:years.map(y=>y.toString()), datasets:[{ label:'आय', data:yearlyIncome, borderColor:'#28a745', fill:false },{ label:'व्यय', data:yearlyExpense, borderColor:'#dc3545', fill:false }] } }); }
 }
 
-// ==================== BULK WHATSAPP (NEW TAB) ====================
+function editCommitteeInfo() {
+    let html = `<div class="modal"><div class="modal-content"><h3>✏️ समिति जानकारी संपादन</h3>
+        <input id="editPresident" value="${appData.settings.president}" placeholder="अध्यक्ष का नाम" class="form-control">
+        <input id="editPresidentMobile" value="${appData.settings.presidentMobile}" placeholder="अध्यक्ष मोबाइल" class="form-control">
+        <input id="editSecretary" value="${appData.settings.secretary}" placeholder="सचिव का नाम" class="form-control">
+        <textarea id="editObjective" placeholder="समिति का उद्देश्य" class="form-control">${appData.settings.committeeObjective || "भव्य मंदिर निर्माण एवं धार्मिक कार्यों का संचालन"}</textarea>
+        <div class="flex-between"><button class="btn btn-primary" onclick="saveCommitteeInfo()">सेव करें</button><button class="btn btn-secondary" onclick="closeModal()">रद्द</button></div>
+    </div></div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+}
+function saveCommitteeInfo() {
+    appData.settings.president = document.getElementById('editPresident').value;
+    appData.settings.presidentMobile = document.getElementById('editPresidentMobile').value;
+    appData.settings.secretary = document.getElementById('editSecretary').value;
+    appData.settings.committeeObjective = document.getElementById('editObjective').value;
+    saveToLocalStorage();
+    closeModal();
+    showToast("✅ समिति जानकारी अपडेट");
+    renderDashboard();
+}
+
+// ==================== BULK WHATSAPP ====================
 function renderBulkWhatsApp() {
     let activeMembers = appData.members.filter(m=>m.status==='active' && m.mobile && !m.hidden);
     let html = `<div class="card"><div class="card-title">📱 बल्क WhatsApp मैसेज<div><button class="print-btn" onclick="printBulkList()"><i class="fas fa-print"></i> प्रिंट</button></div></div>
@@ -845,7 +903,7 @@ function sendExpensesToPresident() { let total = appData.expenses.reduce((s,e)=>
 function renderAdvancePayment(){ let html=`<div class="card"><div class="card-title">⭐ एडवांस भुगतान<div><button class="print-btn" onclick="printAdvanceList()"><i class="fas fa-print"></i> प्रिंट</button><button class="whatsapp-president-btn" onclick="sendAdvanceReportToPresident()"><i class="fab fa-whatsapp"></i> अध्यक्ष को भेजें</button></div></div><table class="data-table"><thead><th>नाम</th><th>एडवांस</th><th></th></thead><tbody>${appData.members.filter(m=>m.status==='active' && !m.hidden).map(m=>`<tr class="${getRowClass(m)}"><td class="${getNameClass(m)}">${m.name}<\/td><td class="badge-advance">₹${m.advanceBalance}<\/td><td>${canAddDonation()?`<button class="btn-sm btn-info" onclick="openAdvanceModal(${m.id}, false)">⭐ जमा<\/button>`:'-'}<\/td><\/tr>`).join('')}</tbody><\/table><\/div>`; document.getElementById('contentArea').innerHTML=html; }
 function printAdvanceList() { let rows = appData.members.filter(m=>m.status==='active' && !m.hidden && m.advanceBalance>0).map(m=>[m.name, m.mobile||'-', '₹'+m.advanceBalance]); printGenericReport('एडवांस शेष सूची', ['नाम', 'मोबाइल', 'एडवांस शेष'], rows); }
 function sendAdvanceReportToPresident() { let totalAdvance = appData.members.filter(m=>!m.hidden).reduce((s,m)=>s+(m.advanceBalance||0),0); let data = `⭐ एडवांस रिपोर्ट\n─────────────────\n💰 कुल एडवांस शेष: ₹${totalAdvance}`; sendToPresident('एडवांस रिपोर्ट', data); }
-function renderProfitLoss(){ let years=getDataYears(); let rows=years.map(y=>{let inc=appData.donations.filter(d=>new Date(d.date).getFullYear()===y).reduce((s,d)=>s+d.amount,0) + appData.otherDonations.filter(d=>new Date(d.date).getFullYear()===y).reduce((s,d)=>s+d.amount,0); let exp=appData.expenses.filter(e=>new Date(e.date).getFullYear()===y).reduce((s,e)=>s+e.amount,0); return `<tr><td style="color:var(--saffron)">${y}<\/td><td class="text-success">₹${inc}<\/td><td class="text-danger">₹${exp}<\/td><td class="${inc-exp>=0?'text-success':'text-danger'}">₹${inc-exp}<\/td><\/tr>`; }).join(''); document.getElementById('contentArea').innerHTML=`<div class="card"><div class="card-title">📊 लाभ/हानि रिपोर्ट<div><button class="print-btn" onclick="printProfitLoss()"><i class="fas fa-print"></i> प्रिंट</button><button class="whatsapp-president-btn" onclick="sendProfitLossToPresident()"><i class="fab fa-whatsapp"></i> अध्यक्ष को भेजें</button></div></div><table class="data-table"><thead><th>वर्ष</th><th>आय</th><th>व्यय</th><th>लाभ/हानि</th></thead><tbody>${rows}</tbody><\/table><\/div>`; }
+function renderProfitLoss(){ let years=getDataYears(); let rows=years.map(y=>{let inc=appData.donations.filter(d=>new Date(d.date).getFullYear()===y).reduce((s,d)=>s+d.amount,0) + appData.otherDonations.filter(d=>new Date(d.date).getFullYear()===y).reduce((s,d)=>s+d.amount,0); let exp=appData.expenses.filter(e=>new Date(e.date).getFullYear()===y).reduce((s,e)=>s+e.amount,0); return `<table><td style="color:var(--saffron)">${y}<\/td><td class="text-success">₹${inc}<\/td><td class="text-danger">₹${exp}<\/td><td class="${inc-exp>=0?'text-success':'text-danger'}">₹${inc-exp}<\/td><\/tr>`; }).join(''); document.getElementById('contentArea').innerHTML=`<div class="card"><div class="card-title">📊 लाभ/हानि रिपोर्ट<div><button class="print-btn" onclick="printProfitLoss()"><i class="fas fa-print"></i> प्रिंट</button><button class="whatsapp-president-btn" onclick="sendProfitLossToPresident()"><i class="fab fa-whatsapp"></i> अध्यक्ष को भेजें</button></div></div><table class="data-table"><thead><th>वर्ष</th><th>आय</th><th>व्यय</th><th>लाभ/हानि</th></thead><tbody>${rows}</tbody><\/table><\/div>`; }
 function printProfitLoss() { let years=getDataYears(); let rows = years.map(y=>{ let inc=appData.donations.filter(d=>new Date(d.date).getFullYear()===y).reduce((s,d)=>s+d.amount,0) + appData.otherDonations.filter(d=>new Date(d.date).getFullYear()===y).reduce((s,d)=>s+d.amount,0); let exp=appData.expenses.filter(e=>new Date(e.date).getFullYear()===y).reduce((s,e)=>s+e.amount,0); return [y.toString(), '₹'+inc, '₹'+exp, '₹'+(inc-exp)]; }); printGenericReport('लाभ/हानि रिपोर्ट', ['वर्ष', 'आय', 'व्यय', 'लाभ/हानि'], rows); }
 function sendProfitLossToPresident() { let totalInc = appData.donations.reduce((s,d)=>s+d.amount,0) + appData.otherDonations.reduce((s,od)=>s+od.amount,0); let totalExp = appData.expenses.reduce((s,e)=>s+e.amount,0); let data = `📊 लाभ/हानि रिपोर्ट\n─────────────────\n💰 कुल आय: ₹${totalInc}\n💸 कुल व्यय: ₹${totalExp}\n⚖️ शुद्ध लाभ/हानि: ₹${totalInc-totalExp}`; sendToPresident('लाभ/हानि रिपोर्ट', data); }
 function renderEvents(){ let html=`<div class="card"><div class="card-title">🎪 आयोजन<button class="print-btn" onclick="printEvents()"><i class="fas fa-print"></i> प्रिंट</button></div>${canEdit()?`<div class="flex-between"><input id="evName" placeholder="नाम" class="form-control"><input type="date" id="evDate" class="form-control"><button class="btn btn-primary" onclick="addEvent()">जोड़ें</button></div>`:''}<div id="eventsList"></div></div>`; document.getElementById('contentArea').innerHTML=html; renderEventsList(); }
