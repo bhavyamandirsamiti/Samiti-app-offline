@@ -1,20 +1,16 @@
 {
-  "name": "मन्दिर समिति",
-  "short_name": "मन्दिर ऐप",
+  "name": "भव्य मन्दिर निर्माण समिति",
+  "short_name": "मन्दिर समिति",
   "start_url": ".",
   "display": "standalone",
+  "background_color": "#FF9933",
   "theme_color": "#FF9933",
-  "background_color": "#FFFFFF",
+  "description": "मन्दिर निर्माण समिति प्रबंधन एप्लिकेशन",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/10613/10613852.png",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23FF9933' width='100' height='100'/%3E%3Ctext x='50' y='70' font-size='60' text-anchor='middle' fill='white'%3E🛕%3C/text%3E%3C/svg%3E",
       "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "https://cdn-icons-png.flaticon.com/512/10613/10613852.png",
-      "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/svg+xml"
     }
   ]
 }
