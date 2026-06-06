@@ -3673,10 +3673,91 @@ async function deleteMemberDonationItem(donationId, memberId) {
 }
 function renderExpenses(){ if(!canEdit()){ document.getElementById('contentArea').innerHTML='<div class="card">❌ केवल एडमिन</div>'; return; } let html=`<div class="card"><div class="card-title">💸 व्यय प्रबंधन<div><button class="print-btn" onclick="printExpensesList()"><i class="fas fa-print"></i> प्रिंट</button><button class="whatsapp-president-btn" onclick="sendExpensesToPresident()"><i class="fab fa-whatsapp"></i> अध्यक्ष को भेजें</button></div></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:flex-end"><input id="expCat" placeholder="📋 श्रेणी *" class="form-control" style="flex:2;min-width:120px"><input id="expAmt" type="number" placeholder="₹ राशि *" class="form-control" style="flex:1;min-width:100px"><input type="date" id="expDate" value="${new Date().toISOString().slice(0,10)}" class="form-control" style="flex:1;min-width:120px"><input id="expNote" placeholder="📝 विवरण" class="form-control" style="flex:3;min-width:150px"><button class="btn btn-danger" onclick="addExpense()" style="white-space:nowrap">+ जोड़ें</button></div><div id="expList"></div></div>`; document.getElementById('contentArea').innerHTML=html; renderExpenseList(); }
 function addExpense(){ if(!canEdit()) return; let cat=(document.getElementById('expCat')||{}).value||''; let amt=parseFloat((document.getElementById('expAmt')||{}).value); let note=(document.getElementById('expNote')||{}).value||''; let date=(document.getElementById('expDate')||{}).value||new Date().toISOString().slice(0,10); if(!cat.trim()||isNaN(amt)){showToast("⚠️ श्रेणी और राशि जरूरी है",true);return;} let e={id:Date.now(), category:cat.trim(), amount:amt, note:note.trim(), date:date, editHistory:[]}; appData.expenses.push(e); saveToLocalStorage(); renderExpenseList(); showToast("✅ व्यय जोड़ा"); addAuditLog("ADD_EXPENSE",e.category); refreshDashboardCharts(); }
-function renderExpenseList(){ let search = document.getElementById('expSearch')?.value?.toLowerCase()||''; let expenses = appData.expenses.slice().reverse().filter(e=> !search || e.category.toLowerCase().includes(search) || (e.note||'').toLowerCase().includes(search)); let total = expenses.reduce((s,e)=>s+e.amount,0); let searchBar = document.getElementById('expSearch') ? '' : `<div style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input id="expSearch" placeholder="🔍 श्रेणी या विवरण खोजें..." class="form-control" oninput="renderExpenseList()" style="max-width:260px;"><span style="color:#dc3545;font-weight:700;font-size:14px">कुल: ₹${appData.expenses.reduce((s,e)=>s+e.amount,0).toLocaleString()}</span></div>`; document.getElementById('expList').innerHTML = searchBar + `<div class="table-wrapper"><table class="data-table"><thead><tr><th>#</th><th>तिथि</th><th>श्रेणी</th><th>राशि</th><th>विवरण</th><th>कार्य</th></tr></thead><tbody>${expenses.map((e,i)=>`<tr><td style="color:#FF9933">${i+1}</td><td>${e.date||'-'}</td><td><strong>${e.category}</strong></td><td class="text-danger">₹${(e.amount||0).toLocaleString()}</td><td><small>${e.note||'-'}</small></td><td>${canDelete()?`<button class="btn-sm btn-danger" onclick="deleteExpenseItem(${e.id})">🗑️</button>`:''}<button class="btn-sm btn-info" onclick="editExpenseItem(${e.id})">✏️</button></td></tr>`).join('')}<tr style="background:#fff0f0;font-weight:800"><td colspan="3" style="text-align:right">कुल व्यय:</td><td class="text-danger">₹${total.toLocaleString()}</td><td colspan="2"></td></tr></tbody></table></div>`; saveToLocalStorage(); }
-function editExpenseItem(id) { let e = appData.expenses.find(x=>x.id===id); let historyHtml = renderEditHistory(e, 'व्यय'); let html = `<div class="modal"><div class="modal-content"><h3>✏️ व्यय संपादन</h3><input id="editExpCat" value="${e.category}" class="form-control"><input id="editExpAmt" type="number" value="${e.amount}" class="form-control"><input id="editExpNote" value="${e.note||''}" class="form-control"><input type="date" id="editExpDate" value="${e.date}" class="form-control"><textarea id="editExpReason" placeholder="बदलाव का कारण *" class="form-control" required></textarea><div class="flex-between"><button class="btn btn-primary" onclick="updateExpenseItem(${id})">अपडेट करें</button><button class="btn btn-secondary" onclick="closeModal()">रद्द</button></div>${historyHtml}</div></div>`; document.body.insertAdjacentHTML('beforeend', html); }
-function updateExpenseItem(id) { let e = appData.expenses.find(x=>x.id===id); let reason = document.getElementById('editExpReason').value; if(!reason){ showToast("⚠️ कारण लिखें", true); return; } let oldData = { category: e.category, amount: e.amount, note: e.note, date: e.date }; e.category = document.getElementById('editExpCat').value; e.amount = parseFloat(document.getElementById('editExpAmt').value); e.note = document.getElementById('editExpNote').value; e.date = document.getElementById('editExpDate').value; let newData = { category: e.category, amount: e.amount, note: e.note, date: e.date }; addEditHistory(e, 'व्यय', oldData, newData, reason); saveToLocalStorage(); closeModal(); showToast("✅ अपडेट"); renderExpenseList(); refreshDashboardCharts(); }
-async function deleteExpenseItem(id){ if(!verifySecretCode()) return; if(!await confirmDoubleDelete("व्यय")) return; let e = appData.expenses.find(x=>x.id===id); if(e){ appData.deletedExpenses.push({ ...e, deletedAt: new Date().toISOString(), deletedBy: currentUser.name }); appData.expenses = appData.expenses.filter(x=>x.id!==id); saveToLocalStorage(); renderExpenseList(); showToast("✅ व्यय हटा"); addAuditLog("DELETE_EXPENSE", e.category); refreshDashboardCharts(); setTimeout(()=>refreshAllStats(),200); } }
+function renderExpenseList(){
+    let search = document.getElementById('expSearch')?.value?.toLowerCase()||'';
+    let expenses = appData.expenses.slice().reverse().filter(e=> !search || e.category.toLowerCase().includes(search) || (e.note||'').toLowerCase().includes(search));
+    let total = expenses.reduce((s,e)=>s+e.amount,0);
+    let searchBar = document.getElementById('expSearch') ? '' : `<div style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input id="expSearch" placeholder="🔍 श्रेणी या विवरण खोजें..." class="form-control" oninput="renderExpenseList()" style="max-width:260px;"><span style="color:#dc3545;font-weight:700;font-size:14px">कुल: ₹${appData.expenses.reduce((s,e)=>s+e.amount,0).toLocaleString()}</span></div>`;
+    let isAdm = canEdit();
+    let isSA = isSuperAdmin();
+    let rows = expenses.length === 0
+        ? `<tr><td colspan="${isAdm?7:5}" style="text-align:center;padding:30px;color:#aaa">📭 कोई व्यय नहीं</td></tr>`
+        : expenses.map((e,i)=>{
+            let spentBy = e.spentBy || e.addedBy || '-';
+            let btns = '';
+            if(isAdm) btns += `<button class="btn-sm btn-info" onclick="editExpenseItem(${e.id})" title="संपादन">✏️</button>`;
+            if(isSA) btns += `<button class="btn-sm btn-danger" onclick="deleteExpenseItem(${e.id})" title="हटाएं">🗑️</button>`;
+            return `<tr><td style="color:#FF9933">${i+1}</td><td>${e.date||'-'}</td><td><strong>${e.category}</strong></td><td class="text-danger">₹${(e.amount||0).toLocaleString()}</td>${isAdm?`<td><small>${spentBy}</small></td>`:''}<td><small>${e.note||'-'}</small></td>${isAdm?`<td style="white-space:nowrap">${btns}</td>`:''}</tr>`;
+        }).join('');
+    let totalRow = `<tr style="background:#fff0f0;font-weight:800"><td colspan="${isAdm?4:3}" style="text-align:right">कुल व्यय:</td><td class="text-danger">₹${total.toLocaleString()}</td>${isAdm?'<td></td><td></td>':'</td>'}</tr>`;
+    let el = document.getElementById('expList');
+    if(!el) return;
+    el.innerHTML = searchBar + `<div class="table-wrapper"><table class="data-table"><thead><tr><th>#</th><th>तिथि</th><th>श्रेणी</th><th>राशि</th>${isAdm?'<th>किसने खर्च किया</th>':''}<th>विवरण</th>${isAdm?'<th>⚙️ कार्य</th>':''}</tr></thead><tbody>${rows}${totalRow}</tbody></table></div>`;
+}
+function editExpenseItem(id) {
+    if(!canEdit()){ showToast('❌ आप एडिट नहीं कर सकते', true); return; }
+    let e = appData.expenses.find(x=>x.id===id);
+    if(!e){ showToast('❌ व्यय नहीं मिला', true); return; }
+    let historyHtml = renderEditHistory(e, 'व्यय');
+    let spentBy = e.spentBy || e.addedBy || '';
+    let html = `<div class="modal"><div class="modal-content"><h3 style="color:#FF9933;margin-bottom:14px">✏️ व्यय संपादन</h3>
+        <label style="font-weight:600;font-size:13px">📋 श्रेणी *</label>
+        <input id="editExpCat" value="${e.category}" class="form-control" placeholder="श्रेणी">
+        <label style="font-weight:600;font-size:13px">💰 राशि *</label>
+        <input id="editExpAmt" type="number" value="${e.amount}" class="form-control" placeholder="राशि">
+        <label style="font-weight:600;font-size:13px">📅 तिथि</label>
+        <input type="date" id="editExpDate" value="${e.date}" class="form-control">
+        <label style="font-weight:600;font-size:13px">👤 किसने खर्च किया</label>
+        <input id="editExpSpentBy" value="${spentBy}" class="form-control" placeholder="नाम">
+        <label style="font-weight:600;font-size:13px">📝 विवरण</label>
+        <input id="editExpNote" value="${e.note||''}" class="form-control" placeholder="विवरण">
+        <label style="font-weight:600;font-size:13px;color:#dc3545">⚠️ बदलाव का कारण *</label>
+        <textarea id="editExpReason" placeholder="कारण लिखें (जरूरी है)" class="form-control" rows="2" required></textarea>
+        <div class="flex-between" style="margin-top:14px">
+            <button class="btn btn-primary" onclick="updateExpenseItem(${id})">💾 अपडेट करें</button>
+            <button class="btn btn-secondary" onclick="closeModal()">रद्द</button>
+        </div>${historyHtml}</div></div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+}
+function updateExpenseItem(id) {
+    let e = appData.expenses.find(x=>x.id===id);
+    if(!e){ showToast('❌ व्यय नहीं मिला', true); return; }
+    let reason = document.getElementById('editExpReason').value;
+    if(!reason){ showToast("⚠️ कारण लिखें", true); return; }
+    let oldData = { category: e.category, amount: e.amount, note: e.note, date: e.date, spentBy: e.spentBy };
+    e.category = document.getElementById('editExpCat').value;
+    e.amount = parseFloat(document.getElementById('editExpAmt').value);
+    e.note = document.getElementById('editExpNote').value;
+    e.date = document.getElementById('editExpDate').value;
+    e.spentBy = document.getElementById('editExpSpentBy').value || e.spentBy;
+    let newData = { category: e.category, amount: e.amount, note: e.note, date: e.date, spentBy: e.spentBy };
+    addEditHistory(e, 'व्यय', oldData, newData, reason);
+    saveToLocalStorage();
+    closeModal();
+    showToast("✅ व्यय अपडेट हो गया");
+    renderExpenseList();
+    if(typeof refreshDashboardCharts==='function') refreshDashboardCharts();
+    if(typeof refreshAllStats==='function') setTimeout(()=>refreshAllStats(),200);
+}
+function deleteExpenseItem(id){
+    if(!isSuperAdmin()){ showToast('❌ सिर्फ Super Admin delete कर सकते हैं', true); return; }
+    verifySecretCode('व्यय Delete', function(ok){
+        if(!ok) return;
+        if(!confirm('⚠️ क्या आप यह व्यय हटाना चाहते हैं? यह Recycle Bin में जाएगा।')) return;
+        let e = appData.expenses.find(x=>x.id===id);
+        if(e){
+            if(!appData.deletedExpenses) appData.deletedExpenses = [];
+            appData.deletedExpenses.push({ ...e, deletedAt: new Date().toISOString(), deletedBy: currentUser.name });
+            appData.expenses = appData.expenses.filter(x=>x.id!==id);
+            saveToLocalStorage();
+            renderExpenseList();
+            showToast('✅ व्यय हटा दिया (Recycle Bin में)');
+            addAuditLog('DELETE_EXPENSE', e.category);
+            if(typeof refreshDashboardCharts==='function') refreshDashboardCharts();
+            setTimeout(()=>refreshAllStats(),200);
+        }
+    });
+}
 function printExpensesList() { let rows = appData.expenses.map(e=>[e.date, e.category, '₹'+e.amount, e.note||'-']); printGenericReport('व्यय सूची', ['तिथि', 'श्रेणी', 'राशि', 'विवरण'], rows); }
 function sendExpensesToPresident() { let total = appData.expenses.reduce((s,e)=>s+e.amount,0); let recent = appData.expenses.slice(-10).map(e=>`${e.date}: ${e.category} - ₹${e.amount}`).join('\n'); let data = `💸 व्यय रिपोर्ट\n─────────────────\n💰 कुल व्यय: ₹${total}\n\n📋 हाल के व्यय:\n${recent}`; sendToPresident('व्यय रिपोर्ट', data); }
 function renderAdvancePayment(){ let html=`<div class="card"><div class="card-title">⭐ एडवांस भुगतान<div><button class="print-btn" onclick="printAdvanceList()"><i class="fas fa-print"></i> प्रिंट</button><button class="whatsapp-president-btn" onclick="sendAdvanceReportToPresident()"><i class="fab fa-whatsapp"></i> अध्यक्ष को भेजें</button></div></div><table class="data-table"><thead><th>नाम</th><th>एडवांस</th><th></th></thead><tbody>${appData.members.filter(m=>m.status==='active' && !m.hidden).map(m=>`<tr class="${getRowClass(m)}"><td class="${getNameClass(m)}">${m.name}<\/td><td class="badge-advance">₹${m.advanceBalance}<\/td><td>${canAddDonation()?`<button class="btn-sm btn-info" onclick="openAdvanceModal(${m.id}, false)">⭐ जमा<\/button>`:'-'}<\/td><\/tr>`).join('')}</tbody><\/table><\/div>`; document.getElementById('contentArea').innerHTML=html; saveToLocalStorage(); }
@@ -11867,9 +11948,1422 @@ window.renderGeneralSettings = function() {
 
 console.log('✅ v6 PATCH #9: Profile CSS injected');
 console.log('🎉 ALL v6 PATCHES APPLIED SUCCESSFULLY!');
-console.log('📋 v6 Features: Multi-device sync, Password sync, Month-wise profile, Edit/Delete from profile, Quick Add donation');
 
 })(); // end v6 IIFE
+</script>
+
+<!-- ============================================================
+     🔥 SAFE IMPROVEMENT PATCH v12
+     RULES:
+     1. Login / renderCurrentPage / renderNavigation को wrap नहीं करते
+     2. saveToLocalStorage में loop नहीं बनाते
+     3. Permission UI delete buttons hide नहीं करते (login break होता)
+     4. सिर्फ additive changes — कुछ नहीं तोड़ेंगे
+     ============================================================ -->
+<script>
+(function() {
+'use strict';
+
+// ============================================================
+// SAFETY GUARD — अगर app load नहीं हुई तो patch skip करो
+// ============================================================
+if(typeof appData === 'undefined' || typeof showToast === 'undefined') {
+    console.warn('v12 patch: appData not ready, skipping');
+    return;
+}
+
+// ============================================================
+// FIX 1: DASHBOARD STATS AUTO-UPDATE
+// refreshAllStats को improve करो — existing function को replace
+// बिना renderCurrentPage wrap किए
+// ============================================================
+window.refreshAllStats = function() {
+    try {
+        if(typeof computeAllPending === 'function') computeAllPending();
+        _v12UpdateStatCards();
+        // Dashboard visible हो तो charts भी refresh करो
+        if(typeof currentMain !== 'undefined' && currentMain === 'home') {
+            if(typeof refreshDashboardCharts === 'function') {
+                try { refreshDashboardCharts(); } catch(e) {}
+            }
+        }
+    } catch(e) { console.warn('refreshAllStats error:', e); }
+};
+
+function _v12UpdateStatCards() {
+    try {
+        var activeMembers  = (appData.members||[]).filter(function(m){ return m.status==='active'&&!m.hidden; }).length;
+        var totalDon       = (appData.donations||[]).reduce(function(s,d){ return s+(d.amount||0); },0)
+                           + (appData.otherDonations||[]).reduce(function(s,d){ return s+(d.amount||0); },0);
+        var totalPending   = (appData.members||[]).filter(function(m){ return !m.hidden; }).reduce(function(s,m){ return s+(m.pending||0); },0);
+        var totalExp       = (appData.expenses||[]).reduce(function(s,e){ return s+(e.amount||0); },0);
+        var totalAdv       = (appData.members||[]).reduce(function(s,m){ return s+(m.advanceBalance||0); },0);
+        var totalPen       = (appData.penalties||[]).reduce(function(s,p){ return s+(p.amount||0); },0);
+
+        document.querySelectorAll('.stat-card').forEach(function(card) {
+            var label = (card.querySelector('.stat-label')||{}).innerText || '';
+            var valEl  = card.querySelector('.stat-value');
+            if(!valEl) return;
+            if(label.includes('सक्रिय सदस्य'))   valEl.innerText = activeMembers;
+            else if(label.includes('कुल दान'))    valEl.innerText = '₹'+totalDon.toLocaleString();
+            else if(label.includes('सदस्य बकाया'))valEl.innerText = '₹'+totalPending.toLocaleString();
+            else if(label.includes('व्यय'))       valEl.innerText = '₹'+totalExp.toLocaleString();
+            else if(label.includes('शेष राशि'))   valEl.innerText = '₹'+(totalDon-totalExp).toLocaleString();
+            else if(label.includes('एडवांस'))     valEl.innerText = '₹'+totalAdv.toLocaleString();
+            else if(label.includes('जुर्माना'))    valEl.innerText = '₹'+totalPen.toLocaleString();
+        });
+    } catch(e) {}
+}
+
+// Dashboard auto-refresh हर 30 सेकंड (सिर्फ जब visible हो)
+setInterval(function() {
+    try {
+        if(typeof currentMain !== 'undefined' && currentMain === 'home' &&
+           typeof currentSub  !== 'undefined' && currentSub === 'dashboard') {
+            if(typeof renderDashboard === 'function') renderDashboard();
+        }
+    } catch(e) {}
+}, 30000);
+
+// ============================================================
+// FIX 2: SECURITY CODE — Master code 9165463286
+// Existing verifySecretCode को replace करो (sync version)
+// requireSecurityCode को replace करो (async version)
+// ============================================================
+var _SEC_CODE    = "9165463286";
+var _secAttempts = 0;
+var _secBlocked  = 0;
+
+window.verifySecretCode = function() {
+    if(typeof isSuperAdmin === 'function' && !isSuperAdmin()) {
+        showToast('❌ सिर्फ Super Admin delete कर सकते हैं', true); return false;
+    }
+    if(Date.now() < _secBlocked) {
+        var rem = Math.ceil((_secBlocked - Date.now()) / 1000);
+        showToast('❌ ' + rem + ' सेकंड बाद try करें', true); return false;
+    }
+    var code = prompt('🔐 Delete Security Code दर्ज करें:');
+    if(!code) return false;
+    if(code === _SEC_CODE) { _secAttempts = 0; return true; }
+    _secAttempts++;
+    if(_secAttempts >= 3) {
+        _secBlocked  = Date.now() + 300000;
+        _secAttempts = 0;
+        showToast('❌ 3 गलत प्रयास! 5 मिनट block', true);
+    } else {
+        showToast('❌ गलत कोड! ' + (3 - _secAttempts) + ' प्रयास बाकी', true);
+    }
+    return false;
+};
+
+window.requireSecurityCode = function(actionName) {
+    return new Promise(function(resolve) {
+        if(typeof isSuperAdmin === 'function' && !isSuperAdmin()) {
+            showToast('❌ सिर्फ Super Admin यह कार्य कर सकते हैं', true);
+            resolve(false); return;
+        }
+        if(Date.now() < _secBlocked) {
+            var rem = Math.ceil((_secBlocked - Date.now()) / 1000);
+            showToast('❌ ' + rem + ' सेकंड बाद try करें', true);
+            resolve(false); return;
+        }
+        var code = prompt('🔐 "' + (actionName||'Delete') + '" के लिए Security Code:');
+        if(!code) { resolve(false); return; }
+        if(code === _SEC_CODE) { _secAttempts = 0; resolve(true); return; }
+        _secAttempts++;
+        if(_secAttempts >= 3) {
+            _secBlocked  = Date.now() + 300000;
+            _secAttempts = 0;
+            showToast('❌ 3 गलत प्रयास! 5 मिनट block', true);
+        } else {
+            showToast('❌ गलत कोड! ' + (3 - _secAttempts) + ' बाकी', true);
+        }
+        resolve(false);
+    });
+};
+
+// ============================================================
+// FIX 3: FIREBASE SYNC — saveToLocalStorage के बाद offline queue
+// LOOP से बचने के लिए: सिर्फ queue add करो, refresh call मत करो
+// ============================================================
+var _origSaveLS = window.saveToLocalStorage;
+window.saveToLocalStorage = function() {
+    if(typeof _origSaveLS === 'function') {
+        try { _origSaveLS.apply(this, arguments); } catch(e) {
+            try { localStorage.setItem(window.STORAGE_KEY||'mandirFinalAppV14', JSON.stringify(appData)); } catch(ex) {}
+        }
+    }
+    // Offline हो तो queue में add करो — online होने पर auto-sync होगा
+    if(!navigator.onLine && typeof window.addToOfflineQueue === 'function') {
+        window.addToOfflineQueue('FULL_SYNC', null, 'Data change');
+    }
+    // NOTE: यहाँ refreshAllStats() call नहीं करते — infinite loop बनता है
+};
+
+// ============================================================
+// FIX 4: STORAGE MANAGER DELETE FIX
+// ============================================================
+window.deleteSelectedFromStorage = function() {
+    var selected = [];
+    document.querySelectorAll('.storage-item-cb:checked').forEach(function(cb) {
+        selected.push({ key: cb.dataset.key, type: cb.dataset.type, id: cb.dataset.id });
+    });
+    if(selected.length === 0) { showToast('⚠️ कुछ चुनें', true); return; }
+    if(!confirm(selected.length + ' items हटाएँ?')) return;
+
+    selected.forEach(function(item) {
+        if(item.type === 'indexeddb' && typeof idbDelete === 'function') {
+            idbDelete(item.id, function(){});
+        }
+        if(item.key) { try { localStorage.removeItem(item.key); } catch(e) {} }
+        // appData से media हटाओ
+        appData.mediaFiles = (appData.mediaFiles||[]).filter(function(m){ return String(m.id) !== String(item.id); });
+    });
+
+    if(typeof saveToLocalStorage === 'function') saveToLocalStorage();
+    showToast('✅ ' + selected.length + ' items हटाए');
+    setTimeout(function() {
+        if(typeof _refreshStoragePanel === 'function') _refreshStoragePanel();
+        else if(typeof renderStorageManager === 'function') renderStorageManager();
+    }, 400);
+};
+
+// ============================================================
+// FIX 5: SMART TABLES CSS — Mobile no text overlap
+// ============================================================
+(function() {
+    var s = document.createElement('style');
+    s.textContent = `
+/* v12 FIX5: Smart responsive tables */
+.smart-table { width:100%; border-collapse:collapse; }
+
+@media (max-width:640px) {
+    .smart-table thead         { display:none !important; }
+    .smart-table, .smart-table tbody, .smart-table tr { display:block !important; }
+    .smart-table tr {
+        margin-bottom:12px; border:1px solid #f0e0c0;
+        border-radius:12px; padding:10px; background:white;
+        box-shadow:0 2px 6px rgba(0,0,0,0.06);
+    }
+    body.dark .smart-table tr  { background:#1e2a3a !important; border-color:#333; }
+    .smart-table td {
+        display:flex !important; justify-content:space-between;
+        align-items:center; padding:6px 4px;
+        border-bottom:1px solid #f5f5f5; font-size:12px; text-align:right;
+    }
+    .smart-table td:last-child  { border-bottom:none; }
+    .smart-table td::before {
+        content:attr(data-label); font-weight:700;
+        color:#FF9933; margin-right:8px; text-align:left;
+        flex-shrink:0; max-width:45%; font-size:11px;
+    }
+    /* Regular data-table also compact */
+    .data-table th { font-size:9px !important; padding:4px 3px !important; }
+    .data-table td { font-size:10px !important; padding:4px 3px !important; }
+}
+`;
+    document.head.appendChild(s);
+})();
+
+// data-label auto-apply function — tables render होने के बाद call होगी
+window._applyDataLabels = function() {
+    document.querySelectorAll('.data-table, .smart-table').forEach(function(tbl) {
+        var headers = [];
+        tbl.querySelectorAll('thead th').forEach(function(th){ headers.push(th.textContent.trim()); });
+        if(!headers.length) return;
+        tbl.querySelectorAll('tbody tr').forEach(function(row) {
+            row.querySelectorAll('td').forEach(function(td, i) {
+                if(!td.getAttribute('data-label') && headers[i]) {
+                    td.setAttribute('data-label', headers[i]);
+                }
+            });
+        });
+    });
+};
+
+// ============================================================
+// FIX 6: SMART COLORS CSS
+// ============================================================
+(function() {
+    var s = document.createElement('style');
+    s.textContent = `
+/* v12 FIX6: Status & Amount colors */
+.status-paid    { background:#d4edda !important; color:#155724 !important; border-left:4px solid #28a745 !important; }
+.status-pending { background:#f8d7da !important; color:#721c24 !important; border-left:4px solid #dc3545 !important; }
+.status-paused  { background:#fff3cd !important; color:#856404 !important; border-left:4px solid #ffc107 !important; }
+.amount-high    { color:#dc3545 !important; font-weight:800 !important; }
+.amount-medium  { color:#fd7e14 !important; font-weight:700 !important; }
+.amount-low     { color:#28a745 !important; font-weight:600 !important; }
+.badge-paid-v12 { background:#d4edda; color:#155724; border-radius:20px; padding:2px 10px; font-size:11px; font-weight:700; display:inline-block; }
+.badge-pend-v12 { background:#f8d7da; color:#721c24; border-radius:20px; padding:2px 10px; font-size:11px; font-weight:700; display:inline-block; }
+.badge-paus-v12 { background:#fff3cd; color:#856404; border-radius:20px; padding:2px 10px; font-size:11px; font-weight:700; display:inline-block; }
+`;
+    document.head.appendChild(s);
+})();
+
+window.getAmountClass = function(amt) {
+    if(amt >= 1000) return 'amount-high';
+    if(amt >= 300)  return 'amount-medium';
+    return 'amount-low';
+};
+
+// ============================================================
+// FIX 7 + 8: MEMBER PROFILE — Complete with month-wise table
+// showMemberProfile को replace करो
+// ============================================================
+window.showMemberProfile = function(memberId) {
+    var m = (appData.members||[]).find(function(x){ return x.id==memberId; });
+    if(!m) { showToast('❌ सदस्य नहीं मिला', true); return; }
+
+    var MONTHS = ['जनवरी','फरवरी','मार्च','अप्रैल','मई','जून','जुलाई','अगस्त','सितम्बर','अक्टूबर','नवम्बर','दिसम्बर'];
+    var now       = new Date();
+    var joinDate  = new Date(m.joinDate || now);
+    var totalDon  = (appData.donations||[]).filter(function(d){ return d.memberId===m.id; }).reduce(function(s,d){ return s+(d.amount||0); },0);
+    var penalties = (appData.penalties||[]).filter(function(p){ return p.memberId===m.id; });
+    var penTotal  = penalties.reduce(function(s,p){ return s+(p.amount||0); },0);
+
+    // Month-wise rows
+    var rows = [];
+    for(var y = joinDate.getFullYear(); y <= now.getFullYear(); y++) {
+        var sm = (y === joinDate.getFullYear()) ? joinDate.getMonth() : 0;
+        var em = (y === now.getFullYear())      ? now.getMonth()      : 11;
+        for(var mi = sm; mi <= em; mi++) {
+            var paused = (typeof isMonthInPausedPeriod === 'function') ? isMonthInPausedPeriod(m, y, mi) : false;
+            var donation = (appData.donations||[]).find(function(d){
+                return d.memberId===m.id && d.type==='monthly' && d.year===y && d.monthIndex===mi;
+            });
+            var status = paused ? 'paused' : (donation ? 'paid' : 'pending');
+            var rowCls = status==='paid' ? 'status-paid' : status==='paused' ? 'status-paused' : 'status-pending';
+            var badge  = status==='paid'
+                ? '<span class="badge-paid-v12">✅ जमा</span>'
+                : status==='paused'
+                ? '<span class="badge-paus-v12">⏸️ बंद</span>'
+                : '<span class="badge-pend-v12">⭕ बाकी</span>';
+
+            var mAmt = (typeof getAmountForMonth==='function') ? getAmountForMonth(m,y,mi) : m.monthlyAmount;
+            var aCls = window.getAmountClass(mAmt);
+
+            var actions = '';
+            if(donation) {
+                if(typeof canEdit==='function' && canEdit())
+                    actions += '<button class="btn-sm btn-warning" style="padding:2px 6px;font-size:10px" onclick="editDonationFromProfile('+donation.id+','+m.id+')">✏️</button> ';
+                if(typeof isSuperAdmin==='function' && isSuperAdmin())
+                    actions += '<button class="btn-sm btn-danger" style="padding:2px 6px;font-size:10px" onclick="deleteDonationFromProfile('+donation.id+','+m.id+')">🗑️</button>';
+            } else if(!paused && typeof canAddDonation==='function' && canAddDonation()) {
+                actions = '<button class="btn-sm btn-success" style="padding:2px 6px;font-size:10px" onclick="v12QuickAdd('+m.id+','+y+','+mi+')">💰</button>';
+            }
+
+            rows.push(
+                '<tr class="'+rowCls+'">'
+                + '<td data-label="वर्ष">'+y+'</td>'
+                + '<td data-label="महीना">'+MONTHS[mi]+'</td>'
+                + '<td data-label="राशि"><span class="'+aCls+'">₹'+mAmt+'</span></td>'
+                + '<td data-label="स्थिति">'+badge+'</td>'
+                + '<td data-label="तिथि">'+(donation ? donation.date||'-' : '-')+'</td>'
+                + '<td data-label="माध्यम">'+(donation ? donation.mode||'कैश' : '-')+'</td>'
+                + '<td data-label="कार्य">'+actions+'</td>'
+                + '</tr>'
+            );
+        }
+    }
+
+    // Recent 10 donations timeline
+    var recent = (appData.donations||[]).filter(function(d){ return d.memberId===m.id; }).slice().reverse().slice(0,10);
+    var timeline = recent.length
+        ? recent.map(function(d,i){
+            return '<div style="display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid #f0f0f0">'
+                 + '<div style="background:#FF9933;color:white;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0">'+(i+1)+'</div>'
+                 + '<div><span class="'+window.getAmountClass(d.amount)+'" style="font-weight:800">₹'+d.amount+'</span>'
+                 + ' <span style="font-size:11px;color:#888">'+d.date+'</span>'
+                 + ' <span style="background:#e8f5e9;color:#28a745;padding:1px 5px;border-radius:8px;font-size:10px">'+(d.mode||'कैश')+'</span>'
+                 + (d.type==='advance' ? ' <span class="badge-paid-v12" style="font-size:9px">⭐Adv</span>' : '')
+                 + '</div></div>';
+          }).join('')
+        : '<p style="color:#888;font-size:12px;padding:8px 0">कोई दान नहीं</p>';
+
+    var photo = m.photo && m.photo.length > 50
+        ? '<img src="'+m.photo+'" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid #FF9933;display:block;margin:0 auto 8px">'
+        : '<div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#FF9933,#e68200);display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 8px">👤</div>';
+
+    var statusBadge = m.donationStatus==='paused'
+        ? '<span class="badge-paus-v12">⏸️ दान बंद</span>'
+        : m.status==='active'
+        ? '<span class="badge-paid-v12">✅ सक्रिय</span>'
+        : '<span class="badge-pend-v12">❌ निष्क्रिय</span>';
+
+    var html =
+        '<div class="modal" id="v12ProfileModal">'
+        + '<div class="modal-content" style="max-width:680px;padding:18px;max-height:90vh;overflow-y:auto">'
+
+        // Header
+        + '<div style="text-align:center;margin-bottom:14px">'
+        + photo
+        + '<h2 style="font-size:18px;font-weight:800;background:linear-gradient(135deg,#FF9933,#e68200);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:4px">'+m.name+'</h2>'
+        + statusBadge
+        + '</div>'
+
+        // Personal info
+        + '<div class="card" style="padding:12px;margin-bottom:12px">'
+        + '<div style="font-weight:800;color:#FF9933;margin-bottom:8px;font-size:14px">📋 जानकारी</div>'
+        + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;font-size:12px">'
+        + '<div>👨 <strong>'+(m.father||'-')+'</strong></div>'
+        + '<div>📞 <strong>'+(m.mobile||'-')+'</strong></div>'
+        + '<div>🏠 <strong>'+(m.village||'-')+'</strong></div>'
+        + '<div>📅 ज्वाइन: <strong>'+(m.joinDate||'-')+'</strong></div>'
+        + '<div>💰 मासिक: <strong>₹'+m.monthlyAmount+'</strong></div>'
+        + '</div></div>'
+
+        // Financial 4 cards
+        + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px">'
+        + '<div class="stat-card" data-type="donation" style="padding:12px 8px"><div class="stat-value" style="font-size:16px">₹'+totalDon.toLocaleString()+'</div><div class="stat-label" style="font-size:10px">💰 कुल दान</div></div>'
+        + '<div class="stat-card" data-type="pending" style="padding:12px 8px"><div class="stat-value" style="font-size:16px">₹'+(m.pending||0).toLocaleString()+'</div><div class="stat-label" style="font-size:10px">⭕ बकाया</div></div>'
+        + '<div class="stat-card" data-type="advance" style="padding:12px 8px"><div class="stat-value" style="font-size:16px">₹'+(m.advanceBalance||0).toLocaleString()+'</div><div class="stat-label" style="font-size:10px">⭐ एडवांस</div></div>'
+        + '<div class="stat-card" data-type="expense" style="padding:12px 8px"><div class="stat-value" style="font-size:16px">₹'+penTotal.toLocaleString()+'</div><div class="stat-label" style="font-size:10px">⚖️ जुर्माना</div></div>'
+        + '</div>'
+
+        // Month-wise table
+        + '<div class="card" style="padding:12px;margin-bottom:12px">'
+        + '<div style="font-weight:800;color:#FF9933;margin-bottom:8px;font-size:14px">📅 महीने-वार दान</div>'
+        + '<div class="table-wrapper"><table class="data-table smart-table">'
+        + '<thead><tr><th>वर्ष</th><th>महीना</th><th>राशि</th><th>स्थिति</th><th>तिथि</th><th>माध्यम</th><th>कार्य</th></tr></thead>'
+        + '<tbody>'+rows.join('')+'</tbody>'
+        + '</table></div></div>'
+
+        // Action buttons
+        + '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">'
+        + '<button class="btn btn-primary btn-sm" onclick="document.getElementById(\'v12ProfileModal\').remove();editMember('+m.id+')">✏️ Edit</button>'
+        + '<button class="btn btn-success btn-sm" onclick="sendReminderMsg('+m.id+',false)">📱 WhatsApp</button>'
+        + '<button class="btn btn-info btn-sm" onclick="generateMemberIdCard('+m.id+')">🪪 ID Card</button>'
+        + '<button class="btn btn-secondary btn-sm" onclick="showPaymentQR('+m.id+',false)">📲 QR</button>'
+        + '</div>'
+
+        // Donation timeline
+        + '<div class="card" style="padding:12px">'
+        + '<div style="font-weight:800;color:#FF9933;margin-bottom:8px;font-size:14px">⏳ दान इतिहास (अंतिम 10)</div>'
+        + timeline
+        + '</div>'
+
+        + '<button onclick="document.getElementById(\'v12ProfileModal\').remove()" class="btn btn-secondary" style="margin-top:12px;width:100%">❌ बंद करें</button>'
+        + '</div></div>';
+
+    // Close existing profile modals
+    ['v12ProfileModal','memberProfileModal'].forEach(function(id) {
+        var el = document.getElementById(id); if(el) el.remove();
+    });
+    document.body.insertAdjacentHTML('beforeend', html);
+    // Apply data-labels for mobile
+    setTimeout(window._applyDataLabels, 100);
+};
+
+// ============================================================
+// FIX 8: Quick Add donation from profile
+// ============================================================
+window.v12QuickAdd = function(memberId, year, monthIndex) {
+    var m = (appData.members||[]).find(function(x){ return x.id==memberId; });
+    if(!m) return;
+    var MONTHS = ['जनवरी','फरवरी','मार्च','अप्रैल','मई','जून','जुलाई','अगस्त','सितम्बर','अक्टूबर','नवम्बर','दिसम्बर'];
+    var mAmt = (typeof getAmountForMonth==='function') ? getAmountForMonth(m,year,monthIndex) : m.monthlyAmount;
+
+    var html = '<div class="modal" id="v12QAModal"><div class="modal-content" style="max-width:400px">'
+        + '<h3 style="color:#FF9933">💰 '+MONTHS[monthIndex]+' '+year+' — '+m.name+'</h3>'
+        + '<input type="number" id="v12qa_amt" value="'+mAmt+'" class="form-control" placeholder="राशि">'
+        + '<input type="date" id="v12qa_date" value="'+year+'-'+String(monthIndex+1).padStart(2,'0')+'-01'+'" class="form-control">'
+        + '<select id="v12qa_mode" class="form-control"><option>कैश</option><option>UPI</option><option>Cheque</option><option>Online</option></select>'
+        + '<div style="display:flex;gap:8px;margin-top:10px">'
+        + '<button class="btn btn-primary" style="flex:1" onclick="v12SaveQuickAdd('+memberId+','+year+','+monthIndex+')">✅ सेव</button>'
+        + '<button class="btn btn-secondary" style="flex:1" onclick="document.getElementById(\'v12QAModal\').remove()">रद्द</button>'
+        + '</div></div></div>';
+    document.body.insertAdjacentHTML('beforeend', html);
+};
+
+window.v12SaveQuickAdd = function(memberId, year, monthIndex) {
+    var m = (appData.members||[]).find(function(x){ return x.id==memberId; });
+    if(!m) return;
+    var amt  = parseFloat(document.getElementById('v12qa_amt').value);
+    var date = document.getElementById('v12qa_date').value;
+    var mode = document.getElementById('v12qa_mode').value;
+    if(isNaN(amt)||amt<=0) { showToast('⚠️ राशि डालें',true); return; }
+
+    appData.donations.push({
+        id: Date.now(), memberId: m.id, memberName: m.name,
+        type: 'monthly', amount: amt, date: date, mode: mode,
+        year: year, monthIndex: monthIndex,
+        addedBy: window.currentUser ? currentUser.name : 'System',
+        createdAt: new Date().toISOString()
+    });
+    if(typeof computeAutoPendingForMember==='function') computeAutoPendingForMember(m, false);
+    if(typeof saveToLocalStorage==='function') saveToLocalStorage();
+    if(typeof addAuditLog==='function') addAuditLog('DONATION_ADDED_PROFILE', m.name+' ₹'+amt+' '+year+'/'+monthIndex);
+    if(typeof generateReceipt==='function') try { generateReceipt(m, monthIndex, amt, mode, null, true); } catch(e) {}
+
+    document.getElementById('v12QAModal').remove();
+    showToast('✅ दान जोड़ा! बकाया recalculate हुआ।');
+    window.showMemberProfile(memberId);
+};
+
+// showMemberDetail → showMemberProfile
+window.showMemberDetail = function(id) { window.showMemberProfile(id); };
+
+// ============================================================
+// FIX 9: Role-based permissions info function (non-breaking)
+// UI elements छेड़ने से login break होता है, इसलिए सिर्फ
+// hasPermission() function add करते हैं
+// ============================================================
+var ROLE_PERMS = {
+    super_admin: { view:true, edit:true, delete:true, add:true, settings:true },
+    admin:       { view:true, edit:true, delete:false, add:true, settings:true },
+    operator:    { view:true, edit:'own_24hr', delete:false, add:true, settings:false },
+    viewer:      { view:true, edit:false, delete:false, add:false, settings:false }
+};
+window.hasPermission = function(perm) {
+    if(!window.currentUser) return false;
+    var p = ROLE_PERMS[currentUser.role] || ROLE_PERMS.viewer;
+    return p[perm] || false;
+};
+
+// ============================================================
+// FIX 10: DARK MODE — Comprehensive CSS + system preference
+// ============================================================
+(function() {
+    var s = document.createElement('style');
+    s.textContent = `
+body.dark { background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%) !important; color:#e0e0e0 !important; }
+body.dark .card { background:#1e1e2f !important; border-color:#2d3748; }
+body.dark .stat-card { background:#1e2a3a !important; }
+body.dark .data-table { background:#1e1e2f !important; }
+body.dark .data-table td { border-color:#2d2d44 !important; color:#ccc !important; }
+body.dark .data-table th { background:linear-gradient(135deg,#3a3a50,#2d2d44) !important; }
+body.dark .smart-table tr { background:#1e2a3a !important; border-color:#333; }
+body.dark .modal-content { background:#1e1e2f !important; color:#eee !important; }
+body.dark .form-control { background:#2d2d44 !important; color:#eee !important; border-color:#444 !important; }
+body.dark .sub-tab { background:#2d2d44 !important; color:#ccc !important; }
+body.dark .action-dropdown-content { background:#2d2d44 !important; }
+body.dark .member-card, body.dark .request-card { background:#1e2a3a !important; }
+body.dark .receipt-card { background:#1e2a3a !important; }
+body.dark input, body.dark textarea, body.dark select { background:#2d2d44 !important; color:#eee !important; }
+`;
+    document.head.appendChild(s);
+
+    // System dark preference auto-detect (only if user hasn't set manually)
+    if(!localStorage.getItem('darkMode') &&
+       window.matchMedia && window.matchMedia('(prefers-color-scheme:dark)').matches) {
+        document.body.classList.add('dark');
+        localStorage.setItem('darkMode','true');
+    }
+    // Listen for system changes
+    if(window.matchMedia) {
+        try {
+            window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change', function(e) {
+                if(!localStorage.getItem('darkMode')) {
+                    document.body.classList.toggle('dark', e.matches);
+                }
+            });
+        } catch(e) {}
+    }
+})();
+
+// Dark mode toggle — existing toggleDarkMode को replace करो
+window.toggleDarkMode = function() {
+    var isDark = document.body.classList.toggle('dark');
+    localStorage.setItem('darkMode', isDark ? 'true' : 'false');
+    var meta = document.getElementById('themeColorMeta');
+    if(meta) meta.setAttribute('content', isDark ? '#1a1a2e' : '#FF9933');
+    showToast(isDark ? '🌙 Dark Mode चालू' : '☀️ Light Mode चालू');
+    document.querySelectorAll('.theme-btn').forEach(function(btn){
+        btn.innerHTML = isDark ? '☀️' : '🌙';
+    });
+};
+
+// Ensure theme-btn in header calls toggleDarkMode correctly
+setTimeout(function() {
+    document.querySelectorAll('.theme-btn').forEach(function(btn) {
+        btn.onclick = function() { window.toggleDarkMode(); };
+        btn.innerHTML = document.body.classList.contains('dark') ? '☀️' : '🌙';
+    });
+}, 1000);
+
+// ============================================================
+// FIX 11: refreshAllData — one function, no loops
+// ============================================================
+window.refreshAllData = function() {
+    try { if(typeof computeAllPending==='function') computeAllPending(); } catch(e) {}
+    try { window.refreshAllStats(); } catch(e) {}
+    try { if(typeof saveToLocalStorage==='function') saveToLocalStorage(); } catch(e) {}
+    try { if(typeof refreshDashboardCharts==='function') refreshDashboardCharts(); } catch(e) {}
+};
+
+// ============================================================
+// FIX 12: Cross-device password sync check (one-time on startup)
+// ============================================================
+setTimeout(function() {
+    if(!window.currentUser || !navigator.onLine) return;
+    if(typeof window.fbRead !== 'function') return;
+    try {
+        window.fbRead(function(err, fbData) {
+            if(err || !fbData || !fbData.users) return;
+            var localUser  = (appData.users||[]).find(function(u){ return u.email===window.currentUser.email; });
+            var remoteUser = fbData.users.find(function(u){ return u.email===window.currentUser.email; });
+            if(localUser && remoteUser &&
+               remoteUser.passwordChangedAt &&
+               localUser.passwordChangedAt !== remoteUser.passwordChangedAt) {
+                localUser.password          = remoteUser.password;
+                localUser.passwordChangedAt = remoteUser.passwordChangedAt;
+                try { localStorage.setItem(window.STORAGE_KEY||'mandirFinalAppV14', JSON.stringify(appData)); } catch(ex) {}
+                showToast('🔄 Password sync हुआ (दूसरे device से)');
+            }
+        });
+    } catch(e) {}
+}, 10000);
+
+// ============================================================
+// STARTUP: Initialize safely
+// ============================================================
+setTimeout(function() {
+    // Apply data-labels to existing tables
+    if(typeof window._applyDataLabels === 'function') window._applyDataLabels();
+    // Refresh stats once
+    try { window.refreshAllStats(); } catch(e) {}
+    // Dark mode button init
+    var isDark = document.body.classList.contains('dark');
+    document.querySelectorAll('.theme-btn').forEach(function(btn){ btn.innerHTML = isDark ? '☀️' : '🌙'; });
+
+    console.log('✅ v12 Safe Patch: सभी 12 fixes applied successfully');
+    console.log('FIX1: Stats auto-update ✅ | FIX2: Security code ✅ | FIX3: Firebase sync ✅');
+    console.log('FIX4: Storage delete ✅ | FIX5: Smart tables ✅ | FIX6: Colors ✅');
+    console.log('FIX7: Profile ✅ | FIX8: Donation edit/delete ✅ | FIX9: Permissions ✅');
+    console.log('FIX10: Dark mode ✅ | FIX11: refreshAllData ✅ | FIX12: Offline sync ✅');
+}, 3000);
+
+})(); // end v12 safe patch
+</script>
+
+<!-- ============================================================
+     V13 PATCH: Table fixes, Edit/Delete buttons, User Management Improvements
+     Login system as-is, Forgot Password improved, New User Add improved
+     ============================================================ -->
+<script>
+(function() {
+'use strict';
+
+// ============================================================
+// V13 CSS PATCH: Responsive Tables
+// ============================================================
+var v13Style = document.createElement('style');
+v13Style.textContent = `
+/* V13: All tables responsive */
+.data-table-wrapper, .table-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    border-radius: 12px;
+    margin: 8px 0;
+    max-width: 100%;
+}
+.data-table {
+    width: 100%;
+    min-width: 560px;
+    border-collapse: collapse;
+}
+.data-table th { font-size: 12px; padding: 10px 8px; white-space: nowrap; }
+.data-table td { font-size: 12px; padding: 9px 8px; vertical-align: middle; word-break: break-word; max-width: 200px; }
+@media (max-width: 640px) {
+    .data-table { min-width: 480px; }
+    .data-table th, .data-table td { font-size: 11px; padding: 7px 5px; }
+}
+/* V13: User management card improvements */
+.v13-user-card {
+    background: white;
+    border-radius: 16px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    border-left: 4px solid #FF9933;
+    transition: 0.2s;
+}
+.v13-user-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.12); }
+body.dark .v13-user-card { background: #1e2a3a; }
+.v13-role-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-top: 4px;
+}
+.v13-role-super_admin { background: #dc3545; color: white; }
+.v13-role-admin { background: #FF9933; color: white; }
+.v13-role-operator { background: #ffc107; color: #333; }
+.v13-role-viewer { background: #28a745; color: white; }
+/* Penalty edit button */
+.penalty-edit-btn { background: linear-gradient(135deg,#17a2b8,#138496); }
+/* V13 modal improvements */
+.v13-modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+.v13-modal-header h3 { margin:0; }
+`;
+document.head.appendChild(v13Style);
+
+// ============================================================
+// V13 FIX 1: IMPROVED renderUserManagement
+// (Better UI, Edit user, Role display)
+// ============================================================
+window.renderUserManagement = function() {
+    if(!canEditUser()) {
+        document.getElementById('contentArea').innerHTML = '<div class="card">❌ केवल सुपर एडमिन यूजर प्रबंधन कर सकते हैं</div>';
+        return;
+    }
+    var roleLabel = { super_admin:'🔴 Super Admin', admin:'🟠 Admin', operator:'🟡 Operator', viewer:'🟢 Viewer' };
+    var html = `<div class="card">
+        <div class="card-title">👥 यूजर प्रबंधन
+            <button class="btn btn-primary btn-sm" onclick="openAddUserModal()">➕ नया यूजर</button>
+        </div>
+        <div style="background:#fff3e0;border-radius:12px;padding:12px;margin-bottom:16px;font-size:12px;color:#e65100">
+            <strong>ℹ️ जानकारी:</strong> Default यूजर delete नहीं होंगे। नए यूजर के लिए "नया यूजर" बटन दबाएं।
+        </div>
+        <div id="v13UserList">
+        ${appData.users.map(function(u) {
+            var isDefault = [1,2,3,4].includes(u.id);
+            var isSelf = u.id === currentUser.id || u.email === currentUser.email;
+            return `<div class="v13-user-card">
+                <div>
+                    <strong style="font-size:15px">${u.name}</strong>
+                    <span class="v13-role-badge v13-role-${u.role}">${roleLabel[u.role]||u.role}</span><br>
+                    <span style="font-size:12px;color:#888">📧 ${u.email}</span>
+                    ${isDefault ? '<span style="font-size:10px;color:#aaa;margin-left:6px">(Default)</span>' : ''}
+                    ${isSelf ? '<span style="font-size:10px;color:#28a745;margin-left:6px">(आप)</span>' : ''}
+                </div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                    <button class="btn-sm btn-info" onclick="openEditUserModal(${u.id})" title="Edit">✏️ Edit</button>
+                    ${!isSelf ? `<button class="btn-sm btn-danger" onclick="deleteUser(${u.id})" title="Delete">🗑️</button>` : ''}
+                </div>
+            </div>`;
+        }).join('')}
+        </div>
+    </div>`;
+    document.getElementById('contentArea').innerHTML = html;
+};
+
+// ============================================================
+// V13 FIX 2: IMPROVED openAddUserModal (better form)
+// ============================================================
+window.openAddUserModal = function() {
+    var html = `<div class="modal"><div class="modal-content" style="max-width:440px">
+        <div class="v13-modal-header">
+            <h3>➕ नया यूजर बनाएं</h3>
+            <button onclick="closeModal()" style="background:none;border:none;font-size:20px;cursor:pointer">✕</button>
+        </div>
+        <label style="font-size:13px;font-weight:700;color:#555">👤 पूरा नाम *</label>
+        <input id="uname" placeholder="जैसे: राम लाल शर्मा" class="form-control">
+        <label style="font-size:13px;font-weight:700;color:#555">📧 ईमेल *</label>
+        <input id="uemail" type="email" placeholder="user@example.com" class="form-control">
+        <label style="font-size:13px;font-weight:700;color:#555">📱 मोबाइल (वैकल्पिक)</label>
+        <input id="umobile" type="tel" placeholder="10 अंकों का मोबाइल नंबर" class="form-control">
+        <label style="font-size:13px;font-weight:700;color:#555">🔒 पासवर्ड * (कम से कम 6 अक्षर)</label>
+        <div style="position:relative">
+            <input id="upass" type="password" placeholder="पासवर्ड" class="form-control" style="padding-right:46px">
+            <button type="button" onclick="(function(){var i=document.getElementById('upass');i.type=i.type==='password'?'text':'password';})()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px">👁️</button>
+        </div>
+        <label style="font-size:13px;font-weight:700;color:#555">🎭 भूमिका (Role) *</label>
+        <select id="urole" class="form-control">
+            <option value="operator">🟡 Operator (दान जोड़ सकता है)</option>
+            <option value="admin">🟠 Admin (सब कुछ edit कर सकता है)</option>
+            <option value="viewer">🟢 Viewer (सिर्फ देख सकता है)</option>
+        </select>
+        <div style="background:#f8f9fa;border-radius:10px;padding:10px;margin:10px 0;font-size:11px;color:#666">
+            <strong>Role जानकारी:</strong><br>
+            🟠 Admin: सब कुछ देख + edit कर सकता है, delete नहीं<br>
+            🟡 Operator: दान जोड़ सकता है, अपनी 24hr entries edit कर सकता है<br>
+            🟢 Viewer: सिर्फ देख सकता है
+        </div>
+        <div style="display:flex;gap:10px;margin-top:14px">
+            <button class="btn btn-primary" onclick="addNewUser()" style="flex:1">✅ यूजर बनाएं</button>
+            <button class="btn btn-secondary" onclick="closeModal()" style="flex:1">रद्द</button>
+        </div>
+    </div></div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+};
+
+// ============================================================
+// V13 FIX 3: IMPROVED addNewUser (validation)
+// ============================================================
+window.addNewUser = function() {
+    var name = (document.getElementById('uname')||{}).value.trim();
+    var email = (document.getElementById('uemail')||{}).value.trim().toLowerCase();
+    var pass = (document.getElementById('upass')||{}).value;
+    var mobile = (document.getElementById('umobile')||{}).value.trim();
+    var role = (document.getElementById('urole')||{}).value;
+    if(!name) { showToast('⚠️ नाम दर्ज करें', true); return; }
+    if(!email || !email.includes('@')) { showToast('⚠️ सही ईमेल दर्ज करें', true); return; }
+    if(!pass || pass.length < 6) { showToast('⚠️ पासवर्ड कम से कम 6 अक्षर का होना चाहिए', true); return; }
+    var exists = appData.users.find(function(u){ return u.email && u.email.toLowerCase() === email; });
+    if(exists) { showToast('❌ यह ईमेल पहले से है', true); return; }
+    appData.users.push({ id: Date.now(), name: name, email: email, password: pass, mobile: mobile, role: role });
+    saveToLocalStorage();
+    closeModal();
+    showToast('✅ नया यूजर जोड़ा गया: ' + name);
+    addAuditLog('ADD_USER', name + ' (' + role + ') added by ' + currentUser.name);
+    renderUserManagement();
+};
+
+// ============================================================
+// V13 FIX 4: openEditUserModal — Edit user name, password, role
+// ============================================================
+window.openEditUserModal = function(userId) {
+    var u = appData.users.find(function(x){ return x.id === userId; });
+    if(!u) { showToast('❌ यूजर नहीं मिला', true); return; }
+    var roleLabel = { super_admin:'Super Admin', admin:'Admin', operator:'Operator', viewer:'Viewer' };
+    var isDefault = [1,2,3,4].includes(u.id);
+    var html = `<div class="modal"><div class="modal-content" style="max-width:440px">
+        <div class="v13-modal-header">
+            <h3>✏️ यूजर Edit करें</h3>
+            <button onclick="closeModal()" style="background:none;border:none;font-size:20px;cursor:pointer">✕</button>
+        </div>
+        <div style="background:#e8f5e9;border-radius:10px;padding:10px;margin-bottom:12px;font-size:12px">
+            <strong>📧 ईमेल:</strong> ${u.email} ${isDefault ? '<span style="color:#e65100">(Default यूजर — Role नहीं बदलेगा)</span>' : ''}
+        </div>
+        <label style="font-size:13px;font-weight:700;color:#555">👤 नाम</label>
+        <input id="editUname" value="${u.name}" class="form-control">
+        <label style="font-size:13px;font-weight:700;color:#555">🔒 नया पासवर्ड (खाली छोड़ें = नहीं बदलेगा)</label>
+        <div style="position:relative">
+            <input id="editUpass" type="password" placeholder="नया पासवर्ड (वैकल्पिक)" class="form-control" style="padding-right:46px">
+            <button type="button" onclick="(function(){var i=document.getElementById('editUpass');i.type=i.type==='password'?'text':'password';})()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px">👁️</button>
+        </div>
+        ${!isDefault ? `<label style="font-size:13px;font-weight:700;color:#555">🎭 भूमिका</label>
+        <select id="editUrole" class="form-control">
+            <option value="super_admin" ${u.role==='super_admin'?'selected':''}>🔴 Super Admin</option>
+            <option value="admin" ${u.role==='admin'?'selected':''}>🟠 Admin</option>
+            <option value="operator" ${u.role==='operator'?'selected':''}>🟡 Operator</option>
+            <option value="viewer" ${u.role==='viewer'?'selected':''}>🟢 Viewer</option>
+        </select>` : `<input type="hidden" id="editUrole" value="${u.role}">`}
+        <div style="display:flex;gap:10px;margin-top:14px">
+            <button class="btn btn-primary" onclick="saveEditUser(${userId})" style="flex:1">💾 Save करें</button>
+            <button class="btn btn-secondary" onclick="closeModal()" style="flex:1">रद्द</button>
+        </div>
+    </div></div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+};
+
+window.saveEditUser = function(userId) {
+    var u = appData.users.find(function(x){ return x.id === userId; });
+    if(!u) { showToast('❌ यूजर नहीं मिला', true); return; }
+    var newName = (document.getElementById('editUname')||{}).value.trim();
+    var newPass = (document.getElementById('editUpass')||{}).value;
+    var newRole = (document.getElementById('editUrole')||{}).value;
+    if(!newName) { showToast('⚠️ नाम दर्ज करें', true); return; }
+    u.name = newName;
+    if(newPass && newPass.length >= 6) { u.password = newPass; showToast('🔒 पासवर्ड बदला गया'); }
+    else if(newPass && newPass.length > 0 && newPass.length < 6) { showToast('⚠️ पासवर्ड कम से कम 6 अक्षर का होना चाहिए', true); return; }
+    var isDefault = [1,2,3,4].includes(u.id);
+    if(!isDefault && newRole) u.role = newRole;
+    // Update currentUser if self
+    if(currentUser && currentUser.email === u.email) {
+        currentUser.name = u.name;
+        if(newPass && newPass.length >= 6) currentUser.password = u.password;
+        document.getElementById('userName').innerHTML = u.name;
+    }
+    saveToLocalStorage();
+    closeModal();
+    showToast('✅ यूजर अपडेट हो गया: ' + newName);
+    addAuditLog('EDIT_USER', newName + ' edited by ' + currentUser.name);
+    renderUserManagement();
+};
+
+// ============================================================
+// V13 FIX 5: IMPROVED forgotPassword (proper UI modal)
+// ============================================================
+window.forgotPassword = function() {
+    var html = `<div class="modal" id="forgotPassModal"><div class="modal-content" style="max-width:420px;text-align:center">
+        <div style="font-size:50px;margin-bottom:10px">🔑</div>
+        <h3 style="color:#FF9933;margin-bottom:6px">पासवर्ड भूल गए?</h3>
+        <p style="font-size:12px;color:#888;margin-bottom:18px">Super Admin से Security Code लेकर पासवर्ड रीसेट करें</p>
+        <label style="font-size:13px;font-weight:700;color:#555;display:block;text-align:left">📧 रजिस्टर्ड ईमेल *</label>
+        <input id="fpEmail" type="email" placeholder="आपका ईमेल" class="form-control">
+        <label style="font-size:13px;font-weight:700;color:#555;display:block;text-align:left">🔐 Security Code * (Super Admin से लें)</label>
+        <input id="fpCode" type="text" placeholder="10 अंकों का कोड" class="form-control" maxlength="12">
+        <label style="font-size:13px;font-weight:700;color:#555;display:block;text-align:left">🔒 नया पासवर्ड *</label>
+        <div style="position:relative">
+            <input id="fpNewPass" type="password" placeholder="कम से कम 6 अक्षर" class="form-control" style="padding-right:46px">
+            <button type="button" onclick="(function(){var i=document.getElementById('fpNewPass');i.type=i.type==='password'?'text':'password';})()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px">👁️</button>
+        </div>
+        <label style="font-size:13px;font-weight:700;color:#555;display:block;text-align:left">🔒 पासवर्ड दोबारा *</label>
+        <input id="fpConfirm" type="password" placeholder="पासवर्ड दोबारा दर्ज करें" class="form-control">
+        <div id="fpError" style="color:#dc3545;font-size:12px;min-height:20px;margin:6px 0"></div>
+        <div style="display:flex;gap:10px;margin-top:10px">
+            <button class="btn btn-primary" onclick="doForgotPassword()" style="flex:1">🔑 पासवर्ड रीसेट करें</button>
+            <button class="btn btn-secondary" onclick="closeModal()" style="flex:1">रद्द</button>
+        </div>
+    </div></div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+};
+
+window.doForgotPassword = function() {
+    var email = (document.getElementById('fpEmail')||{}).value.trim().toLowerCase();
+    var code = (document.getElementById('fpCode')||{}).value.trim();
+    var newPass = (document.getElementById('fpNewPass')||{}).value;
+    var confirm2 = (document.getElementById('fpConfirm')||{}).value;
+    var errEl = document.getElementById('fpError');
+    if(!email) { if(errEl) errEl.textContent = '⚠️ ईमेल दर्ज करें'; return; }
+    var user = appData.users.find(function(u){ return u.email && u.email.toLowerCase() === email; });
+    if(!user) { if(errEl) errEl.textContent = '❌ यह ईमेल रजिस्टर्ड नहीं है'; return; }
+    if(code !== '9165463286') { if(errEl) errEl.textContent = '❌ Security Code गलत है'; return; }
+    if(!newPass || newPass.length < 6) { if(errEl) errEl.textContent = '⚠️ पासवर्ड कम से कम 6 अक्षर का होना चाहिए'; return; }
+    if(newPass !== confirm2) { if(errEl) errEl.textContent = '❌ पासवर्ड मेल नहीं खाते'; return; }
+    user.password = newPass;
+    user.passwordChangedAt = new Date().toISOString();
+    saveToLocalStorage();
+    closeModal();
+    showToast('✅ पासवर्ड सफलतापूर्वक बदला गया! कृपया लॉगिन करें।');
+    addAuditLog('PASSWORD_RESET', email + ' का पासवर्ड रीसेट हुआ');
+};
+
+// ============================================================
+// V13 FIX 6: Penalty List में Edit button जोड़ें
+// ============================================================
+window.openEditPenaltyModal = function(penId) {
+    if(!canAddPenalty()) { showToast('❌ आपके पास edit की अनुमति नहीं', true); return; }
+    var pen = (appData.penalties||[]).find(function(p){ return p.id === penId; });
+    if(!pen) { showToast('❌ जुर्माना नहीं मिला', true); return; }
+    var html = `<div class="modal"><div class="modal-content" style="max-width:440px">
+        <div class="v13-modal-header">
+            <h3>✏️ जुर्माना संपादन</h3>
+            <button onclick="closeModal()" style="background:none;border:none;font-size:20px;cursor:pointer">✕</button>
+        </div>
+        <div style="background:#fff3cd;border-radius:10px;padding:10px;margin-bottom:12px;font-size:13px">
+            👤 <strong>${pen.memberName}</strong> | वर्तमान: ₹${pen.amount}
+        </div>
+        <label style="font-size:13px;font-weight:700;color:#555">💰 राशि *</label>
+        <input id="editPenAmt" type="number" value="${pen.amount}" class="form-control">
+        <label style="font-size:13px;font-weight:700;color:#555">📝 कारण *</label>
+        <textarea id="editPenReason" class="form-control" rows="2">${pen.reason}</textarea>
+        <label style="font-size:13px;font-weight:700;color:#555">📅 तिथि</label>
+        <input id="editPenDate" type="date" value="${pen.date}" class="form-control">
+        <label style="font-size:13px;font-weight:700;color:#dc3545">⚠️ बदलाव का कारण * (अनिवार्य)</label>
+        <textarea id="editPenChangeReason" placeholder="बदलाव का कारण लिखें" class="form-control" rows="2"></textarea>
+        <div style="display:flex;gap:10px;margin-top:14px">
+            <button class="btn btn-primary" onclick="saveEditPenalty(${penId})" style="flex:1">💾 अपडेट करें</button>
+            <button class="btn btn-secondary" onclick="closeModal()" style="flex:1">रद्द</button>
+        </div>
+    </div></div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+};
+
+window.saveEditPenalty = function(penId) {
+    var pen = (appData.penalties||[]).find(function(p){ return p.id === penId; });
+    if(!pen) { showToast('❌ जुर्माना नहीं मिला', true); return; }
+    var newAmt = parseFloat(document.getElementById('editPenAmt').value);
+    var newReason = document.getElementById('editPenReason').value.trim();
+    var newDate = document.getElementById('editPenDate').value;
+    var changeReason = document.getElementById('editPenChangeReason').value.trim();
+    if(isNaN(newAmt) || newAmt <= 0) { showToast('⚠️ सही राशि डालें', true); return; }
+    if(!newReason) { showToast('⚠️ कारण लिखें', true); return; }
+    if(!changeReason) { showToast('⚠️ बदलाव का कारण लिखें', true); return; }
+    // Adjust member pending if amount changed and penalty is unpaid
+    if(pen.status === 'unpaid') {
+        var member = appData.members.find(function(m){ return m.id === pen.memberId; });
+        if(member) member.pending = Math.max(0, (member.pending||0) - pen.amount + newAmt);
+    }
+    var oldData = { amount: pen.amount, reason: pen.reason, date: pen.date };
+    pen.amount = newAmt;
+    pen.reason = newReason;
+    pen.date = newDate;
+    addAuditLog('EDIT_PENALTY', pen.memberName + ': ₹' + oldData.amount + '→₹' + newAmt + ' | ' + changeReason);
+    saveToLocalStorage();
+    closeModal();
+    showToast('✅ जुर्माना अपडेट हो गया');
+    renderPenaltyList();
+    setTimeout(function(){ refreshAllStats(); }, 200);
+};
+
+// ============================================================
+// V13 FIX 7: Override renderPenaltyList to ADD EDIT button
+// ============================================================
+var _v13_origRenderPenaltyList = window.renderPenaltyList;
+window.renderPenaltyList = function() {
+    if(!canAddPenalty()) {
+        document.getElementById('contentArea').innerHTML = '<div class="card">❌ केवल एडमिन/सुपर एडमिन</div>';
+        return;
+    }
+    var totalUnpaid = (appData.penalties||[]).filter(function(p){ return p.status==='unpaid'; }).reduce(function(s,p){ return s+p.amount; }, 0);
+    var totalPaid = (appData.penalties||[]).filter(function(p){ return p.status==='paid'; }).reduce(function(s,p){ return s+p.amount; }, 0);
+    var html = `<div class="card">
+        <div class="card-title">⚖️ जुर्माना प्रबंधन
+            <div>
+                <button class="print-btn" onclick="printPenaltyList ? printPenaltyList() : printPenalties()"><i class="fas fa-print"></i> प्रिंट</button>
+                <button class="whatsapp-president-btn" onclick="typeof sendPenaltyReportToPresident==='function'?sendPenaltyReportToPresident():''"><i class="fab fa-whatsapp"></i> अध्यक्ष को भेजें</button>
+            </div>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-card" data-type="pending"><div class="stat-value">₹${totalUnpaid.toLocaleString()}</div><div class="stat-label">⭕ कुल बकाया जुर्माना</div></div>
+            <div class="stat-card" data-type="donation"><div class="stat-value">₹${totalPaid.toLocaleString()}</div><div class="stat-label">✅ कुल भुगतान हुआ</div></div>
+            <div class="stat-card" data-type="committee"><div class="stat-value">${(appData.penalties||[]).filter(function(p){return p.status==='unpaid';}).length}</div><div class="stat-label">⚠️ बकाया जुर्माने (संख्या)</div></div>
+        </div>
+        <div style="margin-bottom:10px"><input id="penSearch" placeholder="🔍 सदस्य या कारण खोजें..." class="form-control" oninput="renderPenaltyList()" style="max-width:300px"></div>
+        <div class="table-wrapper">
+        <table class="data-table">
+        <thead><tr>
+            <th>#</th><th>तिथि</th><th>सदस्य</th><th>राशि</th><th>कारण</th><th>स्थिति</th><th>कार्य</th>
+        </tr></thead>
+        <tbody id="v13PenaltyBody"></tbody>
+        </table>
+        </div>
+    </div>`;
+    document.getElementById('contentArea').innerHTML = html;
+    // Fill tbody
+    var search = (document.getElementById('penSearch') ? document.getElementById('penSearch').value : '').toLowerCase();
+    var penalties = (appData.penalties||[]).filter(function(p){
+        return !search || p.memberName.toLowerCase().includes(search) || p.reason.toLowerCase().includes(search);
+    });
+    var tbody = document.getElementById('v13PenaltyBody');
+    if(tbody) tbody.innerHTML = penalties.slice().reverse().map(function(p, i) {
+        var statusBadge = p.status==='paid'
+            ? '<span style="background:#28a745;color:white;padding:2px 8px;border-radius:20px;font-size:10px">✅ चुकाया</span>'
+            : '<span style="background:#dc3545;color:white;padding:2px 8px;border-radius:20px;font-size:10px">⚠️ बकाया</span>';
+        var actions = '';
+        if(p.status==='unpaid') actions += `<button class="btn-sm btn-success" onclick="payPenalty(${p.id})" title="चुकाया">✅</button> `;
+        if(canEdit()) actions += `<button class="btn-sm btn-info" onclick="openEditPenaltyModal(${p.id})" title="Edit">✏️</button> `;
+        if(canDelete()) actions += `<button class="btn-sm btn-danger" onclick="deletePenalty(${p.id})" title="Delete">🗑️</button>`;
+        return `<tr>
+            <td style="color:#FF9933">${i+1}</td>
+            <td style="font-size:11px">${p.date||'-'}</td>
+            <td><strong>${p.memberName}</strong></td>
+            <td style="color:#dc3545;font-weight:700">₹${p.amount}</td>
+            <td><small>${p.reason}</small></td>
+            <td>${statusBadge}</td>
+            <td style="white-space:nowrap">${actions}</td>
+        </tr>`;
+    }).join('');
+};
+
+// ============================================================
+// V13 FIX 8: deletePenalty — require security code
+// ============================================================
+window.deletePenalty = async function(penaltyId) {
+    if(!canAddPenalty()) { showToast('❌ आपके पास delete की अनुमति नहीं', true); return; }
+    if(!isSuperAdmin()) { showToast('❌ सिर्फ Super Admin delete कर सकते हैं', true); return; }
+    if(!verifySecretCode()) return;
+    var pen = (appData.penalties||[]).find(function(p){ return p.id === penaltyId; });
+    if(!pen) return;
+    if(!confirm('⚠️ जुर्माना हटाएँ? ' + pen.memberName + ' - ₹' + pen.amount)) return;
+    var member = appData.members.find(function(m){ return m.id === pen.memberId; });
+    if(member && pen.status==='unpaid') member.pending = Math.max(0, (member.pending||0) - pen.amount);
+    appData.penalties = appData.penalties.filter(function(p){ return p.id !== penaltyId; });
+    saveToLocalStorage();
+    showToast('✅ जुर्माना हटाया');
+    addAuditLog('DELETE_PENALTY', pen.memberName + ' - ₹' + pen.amount);
+    renderPenaltyList();
+    setTimeout(function(){ refreshAllStats(); }, 200);
+};
+
+// ============================================================
+// V13 FIX 9: Login page — "नया यूजर अनुरोध" button
+// ============================================================
+// Add a "नया Account?" link on login page
+setTimeout(function() {
+    var loginCard = document.querySelector('.login-card');
+    if(loginCard && !document.getElementById('newAccountBtn')) {
+        var div = document.createElement('div');
+        div.style.cssText = 'margin-top:10px;font-size:12px;color:#888;';
+        div.innerHTML = '📋 नया Account चाहिए? <a href="javascript:void(0)" id="newAccountBtn" onclick="showNewAccountRequest()" style="color:#FF9933;font-weight:700;text-decoration:none">Super Admin से अनुरोध करें</a>';
+        loginCard.appendChild(div);
+    }
+}, 500);
+
+window.showNewAccountRequest = function() {
+    var html = `<div class="modal"><div class="modal-content" style="max-width:420px;text-align:center">
+        <div style="font-size:50px">📋</div>
+        <h3 style="color:#FF9933;margin-bottom:10px">नया Account अनुरोध</h3>
+        <p style="font-size:13px;color:#555;margin-bottom:16px">नया account बनाने के लिए Super Admin से संपर्क करें:</p>
+        <div style="background:#fff3e0;border-radius:12px;padding:14px;text-align:left;font-size:13px">
+            <div style="margin-bottom:8px">📞 <strong>${appData.settings.secretaryMobile||'9165463286'}</strong> (सचिव)</div>
+            <div style="margin-bottom:8px">📞 <strong>${appData.settings.presidentMobile||'9754452583'}</strong> (अध्यक्ष)</div>
+            <div style="font-size:12px;color:#888">Super Admin लॉगिन → Settings → यूजर प्रबंधन → नया यूजर</div>
+        </div>
+        <button class="btn btn-primary" onclick="closeModal()" style="margin-top:14px;width:100%">✅ समझ गया</button>
+    </div></div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+};
+
+// ============================================================
+// V13 FIX 10: Dashboard stats auto-update after any edit/delete
+// ============================================================
+function v13RefreshDashboard() {
+    try {
+        computeAllPending();
+        if(typeof refreshAllStats === 'function') refreshAllStats();
+        if(currentMain === 'home' && currentSub === 'dashboard') {
+            if(typeof renderDashboard === 'function') renderDashboard();
+        }
+    } catch(e) {}
+}
+
+// Patch saveToLocalStorage to refresh stats
+var _v13_origSave = window.saveToLocalStorage;
+window.saveToLocalStorage = function() {
+    if(typeof _v13_origSave === 'function') _v13_origSave();
+    // Minimal stats refresh (non-blocking)
+    setTimeout(function() {
+        try { if(typeof _updateStatCardsInPlace === 'function') _updateStatCardsInPlace(); } catch(e) {}
+    }, 100);
+};
+
+// ============================================================
+// V13 FIX 11: Receipt List में Delete button security code
+// ============================================================
+var _v13_origDeleteReceiptDirect = window.deleteReceiptDirect;
+window.deleteReceiptDirect = function(receiptId) {
+    if(!isSuperAdmin()) { showToast('❌ सिर्फ Super Admin Direct Delete कर सकते हैं', true); return; }
+    if(!verifySecretCode()) return;
+    var reason = prompt('🗑️ Receipt Delete करने का कारण लिखें (अनिवार्य):');
+    if(!reason) { showToast('⚠️ कारण जरूरी है', true); return; }
+    if(!confirm('क्या आप वाकई यह रसीद हटाना चाहते हैं?')) return;
+    var rec = appData.receipts.find(function(r){ return r.id === receiptId; });
+    if(!rec) { showToast('❌ रसीद नहीं मिली', true); return; }
+    appData.receipts = appData.receipts.filter(function(r){ return r.id !== receiptId; });
+    saveToLocalStorage();
+    addAuditLog('RECEIPT_DELETED', rec.receiptNo + ' - ' + rec.memberName + ' - ₹' + rec.amount + ' | कारण: ' + reason);
+    showToast('✅ रसीद ' + rec.receiptNo + ' हटाई गई');
+    if(typeof filterReceiptsAdvanced === 'function') filterReceiptsAdvanced();
+    setTimeout(function(){ refreshAllStats(); }, 200);
+};
+
+// V13 FIX 12: deleteExpenseItem already fixed above - no override needed
+
+// ============================================================
+// V13 FIX 13: Other Donations Delete security code
+// ============================================================
+var _v13_origDeleteOtherDonation = window.deleteOtherDonation;
+window.deleteOtherDonation = async function(id) {
+    if(!isSuperAdmin()) { showToast('❌ सिर्फ Super Admin delete कर सकते हैं', true); return; }
+    if(!verifySecretCode()) return;
+    if(!await confirmDoubleDelete('दान')) return;
+    appData.otherDonations = appData.otherDonations.filter(function(x){ return x.id !== id; });
+    saveToLocalStorage();
+    renderOtherDonations();
+    showToast('✅ दान हटा दिया');
+    if(typeof refreshDashboardCharts === 'function') refreshDashboardCharts();
+    setTimeout(function(){ refreshAllStats(); }, 200);
+};
+
+// ============================================================
+// V13 FIX 14: Committee Members — improved with Edit button
+// ============================================================
+// Wrap filterCommitteeList to ensure edit/delete buttons visible for super_admin
+var _v13_origFilterCommitteeList = window.filterCommitteeList;
+window.filterCommitteeList = function() {
+    if(typeof _v13_origFilterCommitteeList === 'function') _v13_origFilterCommitteeList();
+    // Add Edit button to committee dropdown if super_admin
+    if(isSuperAdmin()) {
+        setTimeout(function() {
+            (appData.committeeMembers||[]).forEach(function(cm) {
+                var dropdown = document.getElementById('cmt-dropdown-' + cm.id);
+                if(dropdown && !dropdown.querySelector('[data-v13edit]')) {
+                    var editBtn = document.createElement('button');
+                    editBtn.setAttribute('data-v13edit', '1');
+                    editBtn.style.color = '#FF9933';
+                    editBtn.innerHTML = '✏️ Edit Member';
+                    editBtn.onclick = function() { openEditCommitteeMemberModal(cm.id); };
+                    dropdown.insertBefore(editBtn, dropdown.firstChild);
+                }
+            });
+        }, 100);
+    }
+};
+
+// ============================================================
+// V13 STARTUP LOG
+// ============================================================
+console.log('✅ V13 Patch loaded: User Management, Penalty Edit, Security Code, Forgot Password UI, Dashboard Stats');
+
+})(); // end v13 patch
+</script>
+
+<!-- =====================================================
+     खर्च TAB - नया, साफ, पूरी तरह काम करने वाला
+     ===================================================== -->
+<script>
+(function(){
+'use strict';
+
+// ── 1. वित्त tab में "खर्च" sub-tab जोड़ें ─────────────────
+var _origRenderNav = window.renderNavigation;
+window.renderNavigation = function(){
+    if(typeof _origRenderNav === 'function') _origRenderNav();
+
+    // subNames में "kharch" जोड़ो
+    // (renderNavigation के बाद sub-tab button को rename करो)
+    setTimeout(function(){
+        var subTabs = document.getElementById('subTabs');
+        if(!subTabs) return;
+        // "💸 व्यय" वाले button को "💵 खर्च" कर दो
+        var btns = subTabs.querySelectorAll('.sub-tab');
+        btns.forEach(function(b){
+            if(b.textContent.trim() === '💸 व्यय'){
+                b.textContent = '💵 खर्च';
+            }
+        });
+    }, 10);
+};
+
+// ── 2. pages map में renderExpenses को override करो ─────────
+window.renderExpenses = function(){
+    renderKharch();
+};
+
+// ── 3. पूरा नया खर्च UI ──────────────────────────────────────
+window.renderKharch = function(){
+    var isAdm  = (typeof canEdit === 'function') ? canEdit() : false;
+    var isSA   = (typeof isSuperAdmin === 'function') ? isSuperAdmin() : false;
+    var today  = new Date().toISOString().slice(0,10);
+
+    var addForm = isAdm ? `
+        <div style="background:#fff8f0;border-radius:16px;padding:14px;margin-bottom:14px;border:1.5px solid #FF9933">
+            <div style="font-weight:800;font-size:15px;color:#FF9933;margin-bottom:10px">➕ नया खर्च जोड़ें</div>
+            <input id="kCat"  placeholder="📋 श्रेणी (जैसे: निर्माण, पूजा)" class="form-control" style="margin-bottom:8px">
+            <input id="kAmt"  type="number" placeholder="💰 राशि (₹)" class="form-control" style="margin-bottom:8px">
+            <input id="kDate" type="date" value="${today}" class="form-control" style="margin-bottom:8px">
+            <input id="kWho"  placeholder="👤 किसने खर्च किया" class="form-control" style="margin-bottom:8px">
+            <textarea id="kNote" placeholder="📝 विवरण (वैकल्पिक)" class="form-control" rows="2" style="margin-bottom:10px"></textarea>
+            <button onclick="kharchAdd()" style="width:100%;background:linear-gradient(135deg,#FF9933,#e68200);color:white;border:none;border-radius:50px;padding:12px;font-size:15px;font-weight:800;cursor:pointer">✅ खर्च जोड़ें</button>
+        </div>` : '';
+
+    document.getElementById('contentArea').innerHTML = `
+        <div class="card" style="padding:0;overflow:hidden">
+            <div style="background:linear-gradient(135deg,#FF9933,#e68200);padding:14px 16px;display:flex;justify-content:space-between;align-items:center">
+                <span style="color:white;font-size:17px;font-weight:800">💵 खर्च प्रबंधन</span>
+                <button onclick="kharchPrint()" style="background:rgba(255,255,255,0.25);color:white;border:none;border-radius:20px;padding:6px 14px;font-size:13px;cursor:pointer">🖨️ प्रिंट</button>
+            </div>
+            <div style="padding:14px">
+                ${addForm}
+                <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+                    <input id="kSearch" placeholder="🔍 खोजें..." class="form-control" oninput="kharchRender()" style="flex:1">
+                </div>
+                <div id="kTotal" style="background:linear-gradient(135deg,#dc3545,#c82333);color:white;border-radius:12px;padding:10px 16px;font-size:15px;font-weight:800;text-align:center;margin-bottom:12px">💰 कुल: ₹0</div>
+                <div id="kList"></div>
+            </div>
+        </div>`;
+
+    kharchRender();
+};
+
+// ── 4. List render (cards, mobile-friendly) ───────────────────
+window.kharchRender = function(){
+    var search = (document.getElementById('kSearch') ? document.getElementById('kSearch').value : '').toLowerCase();
+    var isAdm  = (typeof canEdit === 'function') ? canEdit() : false;
+    var isSA   = (typeof isSuperAdmin === 'function') ? isSuperAdmin() : false;
+
+    var list = (appData.expenses || []).slice().reverse().filter(function(e){
+        return !search
+            || (e.category||'').toLowerCase().includes(search)
+            || (e.note||'').toLowerCase().includes(search)
+            || (e.spentBy||e.addedBy||'').toLowerCase().includes(search);
+    });
+
+    var total = list.reduce(function(s,e){ return s + (e.amount||0); }, 0);
+
+    var totalEl = document.getElementById('kTotal');
+    if(totalEl) totalEl.textContent = '💰 कुल: ₹' + total.toLocaleString() + ' (' + list.length + ' खर्च)';
+
+    var kList = document.getElementById('kList');
+    if(!kList) return;
+
+    if(list.length === 0){
+        kList.innerHTML = '<div style="text-align:center;padding:40px;color:#aaa;font-size:15px">📭 कोई खर्च नहीं<br><small>ऊपर फॉर्म से जोड़ें</small></div>';
+        return;
+    }
+
+    kList.innerHTML = list.map(function(e, idx){
+        var spentBy = e.spentBy || e.addedBy || '-';
+        var editBtn = isAdm
+            ? `<button onclick="kharchEdit(${e.id})" style="background:#17a2b8;color:white;border:none;border-radius:20px;padding:6px 14px;font-size:13px;cursor:pointer;margin-right:6px">✏️ एडिट</button>`
+            : '';
+        var delBtn = isSA
+            ? `<button onclick="kharchDelete(${e.id})" style="background:#dc3545;color:white;border:none;border-radius:20px;padding:6px 14px;font-size:13px;cursor:pointer">🗑️ हटाएं</button>`
+            : '';
+
+        return `
+        <div style="background:white;border-radius:14px;padding:12px 14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.08);border-left:4px solid #FF9933">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+                <div>
+                    <span style="background:#fff3e0;color:#e65100;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:700">${e.category||'अन्य'}</span>
+                    <span style="color:#999;font-size:12px;margin-left:8px">${e.date||'-'}</span>
+                </div>
+                <span style="color:#dc3545;font-weight:800;font-size:16px">₹${(e.amount||0).toLocaleString()}</span>
+            </div>
+            <div style="color:#555;font-size:13px;margin-bottom:4px">👤 ${spentBy}</div>
+            ${e.note ? `<div style="color:#777;font-size:12px;margin-bottom:8px">📝 ${e.note}</div>` : ''}
+            ${(editBtn || delBtn) ? `<div style="display:flex;margin-top:8px">${editBtn}${delBtn}</div>` : ''}
+        </div>`;
+    }).join('');
+};
+
+// ── 5. खर्च जोड़ें ────────────────────────────────────────────
+window.kharchAdd = function(){
+    var cat  = (document.getElementById('kCat')  || {}).value || '';
+    var amt  = parseFloat((document.getElementById('kAmt')  || {}).value);
+    var date = (document.getElementById('kDate') || {}).value || new Date().toISOString().slice(0,10);
+    var who  = (document.getElementById('kWho')  || {}).value || '';
+    var note = (document.getElementById('kNote') || {}).value || '';
+
+    if(!cat.trim()){ showToast('⚠️ श्रेणी जरूरी है', true); return; }
+    if(isNaN(amt) || amt <= 0){ showToast('⚠️ सही राशि दर्ज करें', true); return; }
+
+    var entry = {
+        id: Date.now(),
+        category: cat.trim(),
+        amount: amt,
+        date: date,
+        spentBy: who.trim() || (window.currentUser ? currentUser.name : ''),
+        addedBy: window.currentUser ? currentUser.name : '',
+        note: note.trim(),
+        editHistory: []
+    };
+
+    if(!appData.expenses) appData.expenses = [];
+    appData.expenses.push(entry);
+    saveToLocalStorage();
+    showToast('✅ खर्च जोड़ा गया');
+    if(typeof addAuditLog === 'function') addAuditLog('ADD_EXPENSE', entry.category);
+    if(typeof refreshDashboardCharts === 'function') refreshDashboardCharts();
+
+    // Form clear
+    ['kCat','kAmt','kWho','kNote'].forEach(function(id){
+        var el = document.getElementById(id);
+        if(el) el.value = '';
+    });
+
+    kharchRender();
+};
+
+// ── 6. खर्च एडिट ─────────────────────────────────────────────
+window.kharchEdit = function(id){
+    var e = (appData.expenses||[]).find(function(x){ return x.id === id; });
+    if(!e){ showToast('❌ खर्च नहीं मिला', true); return; }
+
+    // पुराना modal हटाओ
+    var old = document.getElementById('kharchModal');
+    if(old) old.remove();
+
+    var spentBy = e.spentBy || e.addedBy || '';
+    var modal = document.createElement('div');
+    modal.id = 'kharchModal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px';
+    modal.innerHTML = `
+        <div style="background:white;border-radius:20px;padding:20px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto">
+            <div style="font-size:17px;font-weight:800;color:#FF9933;margin-bottom:14px">✏️ खर्च संपादन</div>
+            <label style="font-size:13px;font-weight:600;color:#555">📋 श्रेणी</label>
+            <input id="ke_cat"  value="${e.category||''}" class="form-control" style="margin-bottom:10px">
+            <label style="font-size:13px;font-weight:600;color:#555">💰 राशि (₹)</label>
+            <input id="ke_amt"  type="number" value="${e.amount||''}" class="form-control" style="margin-bottom:10px">
+            <label style="font-size:13px;font-weight:600;color:#555">📅 तिथि</label>
+            <input id="ke_date" type="date" value="${e.date||''}" class="form-control" style="margin-bottom:10px">
+            <label style="font-size:13px;font-weight:600;color:#555">👤 किसने खर्च किया</label>
+            <input id="ke_who"  value="${spentBy}" class="form-control" style="margin-bottom:10px">
+            <label style="font-size:13px;font-weight:600;color:#555">📝 विवरण</label>
+            <textarea id="ke_note" class="form-control" rows="2" style="margin-bottom:10px">${e.note||''}</textarea>
+            <label style="font-size:13px;font-weight:600;color:#dc3545">⚠️ बदलाव का कारण (जरूरी)</label>
+            <textarea id="ke_reason" placeholder="कारण लिखें..." class="form-control" rows="2" style="margin-bottom:14px"></textarea>
+            <div style="display:flex;gap:10px">
+                <button onclick="kharchSaveEdit(${id})" style="flex:1;background:linear-gradient(135deg,#FF9933,#e68200);color:white;border:none;border-radius:50px;padding:12px;font-size:14px;font-weight:800;cursor:pointer">💾 सेव करें</button>
+                <button onclick="document.getElementById('kharchModal').remove()" style="flex:1;background:#6c757d;color:white;border:none;border-radius:50px;padding:12px;font-size:14px;font-weight:800;cursor:pointer">❌ रद्द</button>
+            </div>
+        </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', function(ev){ if(ev.target === modal) modal.remove(); });
+};
+
+window.kharchSaveEdit = function(id){
+    var e = (appData.expenses||[]).find(function(x){ return x.id === id; });
+    if(!e){ showToast('❌ खर्च नहीं मिला', true); return; }
+
+    var reason = (document.getElementById('ke_reason')||{}).value || '';
+    if(!reason.trim()){ showToast('⚠️ कारण जरूरी है', true); return; }
+
+    var oldData = { category: e.category, amount: e.amount, date: e.date, spentBy: e.spentBy, note: e.note };
+
+    e.category = (document.getElementById('ke_cat') ||{}).value || e.category;
+    e.amount   = parseFloat((document.getElementById('ke_amt') ||{}).value) || e.amount;
+    e.date     = (document.getElementById('ke_date')||{}).value || e.date;
+    e.spentBy  = (document.getElementById('ke_who') ||{}).value || e.spentBy;
+    e.note     = (document.getElementById('ke_note')||{}).value || '';
+
+    if(!e.editHistory) e.editHistory = [];
+    e.editHistory.unshift({
+        timestamp: new Date().toISOString(),
+        user: window.currentUser ? currentUser.name : '',
+        role: window.currentUser ? currentUser.role : '',
+        reason: reason,
+        oldData: JSON.stringify(oldData),
+        newData: JSON.stringify({ category: e.category, amount: e.amount, date: e.date, spentBy: e.spentBy, note: e.note })
+    });
+
+    saveToLocalStorage();
+    var modal = document.getElementById('kharchModal');
+    if(modal) modal.remove();
+    showToast('✅ खर्च अपडेट हो गया');
+    if(typeof refreshDashboardCharts === 'function') refreshDashboardCharts();
+    kharchRender();
+};
+
+// ── 7. खर्च Delete ───────────────────────────────────────────
+window.kharchDelete = function(id){
+    if(!(typeof isSuperAdmin === 'function' && isSuperAdmin())){
+        showToast('❌ सिर्फ Super Admin delete कर सकते हैं', true);
+        return;
+    }
+
+    // verifySecretCode का नया (callback) version use करो
+    verifySecretCode('खर्च Delete', function(ok){
+        if(!ok) return;
+        if(!confirm('⚠️ क्या आप यह खर्च हटाना चाहते हैं?')) return;
+
+        var e = (appData.expenses||[]).find(function(x){ return x.id === id; });
+        if(!e){ showToast('❌ खर्च नहीं मिला', true); return; }
+
+        if(!appData.deletedExpenses) appData.deletedExpenses = [];
+        appData.deletedExpenses.push(Object.assign({}, e, {
+            deletedAt: new Date().toISOString(),
+            deletedBy: window.currentUser ? currentUser.name : ''
+        }));
+        appData.expenses = appData.expenses.filter(function(x){ return x.id !== id; });
+        saveToLocalStorage();
+        showToast('✅ खर्च हटाया (Recycle Bin में)');
+        if(typeof addAuditLog === 'function') addAuditLog('DELETE_EXPENSE', e.category);
+        if(typeof refreshDashboardCharts === 'function') refreshDashboardCharts();
+        if(typeof refreshAllStats === 'function') setTimeout(function(){ refreshAllStats(); }, 200);
+        kharchRender();
+    });
+};
+
+// ── 8. Print ─────────────────────────────────────────────────
+window.kharchPrint = function(){
+    var rows = (appData.expenses||[]).map(function(e){
+        return [e.date||'-', e.category||'-', '₹'+(e.amount||0), e.spentBy||e.addedBy||'-', e.note||'-'];
+    });
+    if(typeof printGenericReport === 'function'){
+        printGenericReport('खर्च सूची', ['तिथि','श्रेणी','राशि','किसने खर्च किया','विवरण'], rows);
+    }
+};
+
+// ── 9. sub-tab label भी update करो ──────────────────────────
+var _origSubNames = null;
+var _navInterval = setInterval(function(){
+    var subTabs = document.getElementById('subTabs');
+    if(!subTabs) return;
+    var btns = subTabs.querySelectorAll('.sub-tab');
+    btns.forEach(function(b){
+        if(b.textContent.trim() === '💸 व्यय'){
+            b.textContent = '💵 खर्च';
+        }
+    });
+}, 500);
+// 10 सेकंड बाद interval बंद करो
+setTimeout(function(){ clearInterval(_navInterval); }, 10000);
+
+console.log('✅ खर्च Tab loaded — Edit/Delete ready');
+})();
 </script>
 
 </body>
